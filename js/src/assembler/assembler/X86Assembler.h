@@ -444,6 +444,24 @@ public:
     size_t allocSize() const { return m_formatter.allocSize(); }
     unsigned char *buffer() const { return m_formatter.buffer(); }
     bool oom() const { return m_formatter.oom(); }
+    /* michath */
+    bool constant_blind = 1;
+    int  blind_value = 0;
+    void setConstantBlind(bool _in){ constant_blind = _in; }
+    bool isConstantBlind() { return constant_blind; }
+
+    int blindingValue()
+    {
+    	if(blind_value)
+    		return blind_value;
+    	return blind_value = ConstantBlindRand();
+    }
+
+    int ConstantBlindRand(){
+    	return 0xdeadbeef;
+    }
+
+
 
     void nop()
     {
