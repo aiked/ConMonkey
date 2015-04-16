@@ -1761,10 +1761,13 @@ public:
         m_formatter.oneByteOp(OP_MOV_GvEv, dst, addr);
     }
 
-    /* michath */
+    /* michath void movl_i32r(int imm, RegisterID dst) */
     void movl_i32r(int imm, RegisterID dst)
     {
-    	(isConstantBlind()) ? (movl_i32r_blnd(imm, dst)) : (movl_i32r_norm(imm, dst));
+    	if (isConstantBlind())
+    		movl_i32r_blnd(imm, dst);
+		else
+			movl_i32r_norm(imm, dst);
     }
 
     void movl_i32r_blnd(int imm, RegisterID dst)
@@ -1782,16 +1785,6 @@ public:
         m_formatter.immediate32(imm);
     }
 
-	/*
-    void movl_i32r(int imm, RegisterID dst)
-	{
-		spew("movl       $0x%x, %s",
-				imm, nameIReg(4, dst));
-		m_formatter.oneByteOp(OP_MOV_EAXIv, dst);
-		m_formatter.immediate32(imm);
-	}
-	 */
-
     void movb_i8m(int imm, int offset, RegisterID base)
     {
         spew("movb       $0x%x, %s0x%x(%s)",
@@ -1808,7 +1801,23 @@ public:
         m_formatter.immediate8(imm);
     }
 
+    /* michath movw_i16m(int imm, int offset, RegisterID base) */
     void movw_i16m(int imm, int offset, RegisterID base)
+    {
+    	if (isConstantBlind())
+    		movw_i16m_blnd( imm, offset, base);
+    	else
+    		movw_i16m_norm( imm, offset, base);
+    }
+
+    void movw_i16m_blnd(int imm, int offset, RegisterID base)
+    {
+    	int bv = blindingValue();
+    	movw_i16m_norm(imm ^ bv, offset, base);
+    	xorl_im( bv, offset, base);
+    }
+
+    void movw_i16m_norm(int imm, int offset, RegisterID base)
     {
         spew("movw       $0x%x, %s0x%x(%s)",
              imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
@@ -1817,7 +1826,7 @@ public:
         m_formatter.immediate16(imm);
     }
 
-    /* michath */
+    /* michath void movl_i32m(int imm, int offset, RegisterID base) */
     void movl_i32m(int imm, int offset, RegisterID base)
     {
     	if (isConstantBlind())
@@ -1841,17 +1850,7 @@ public:
     	m_formatter.immediate32(imm);
     }
 
-    /*
-    void movl_i32m(int imm, int offset, RegisterID base)
-    {
-        spew("movl       $0x%x, %s0x%x(%s)",
-             imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
-        m_formatter.oneByteOp(OP_GROUP11_EvIz, GROUP11_MOV, base, offset);
-        m_formatter.immediate32(imm);
-    }
-    */
-
-
+    /* michath void movw_i16m(int imm, int offset, RegisterID base, RegisterID index, int scale) */
     void movw_i16m(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
         spew("movw       $0x%x, %d(%s,%s,%d)",
