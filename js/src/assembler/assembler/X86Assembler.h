@@ -462,6 +462,14 @@ public:
     	return blind_value = ConstantBlindRand();
     }
 
+    int blindingValue16()
+        {
+        	if(blind_value)
+        		return blind_value & 0xFFFF;
+        	blind_value = ConstantBlindRand();
+        	return blind_value & 0xFFFF;
+        }
+
 
 
     void nop()
@@ -1031,15 +1039,27 @@ public:
 
     void xorl_im(int imm, int offset, RegisterID base)
     {
-        spew("xorl       $0x%x, %s0x%x(%s)",
-             imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
         if (CAN_SIGN_EXTEND_8_32(imm)) {
+        	spew("xorb       $0x%x, %s0x%x(%s)",
+        	             imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
             m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_XOR, base, offset);
             m_formatter.immediate8(imm);
         } else {
+        	spew("xorl       $0x%x, %s0x%x(%s)",
+        	             imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
             m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_XOR, base, offset);
             m_formatter.immediate32(imm);
         }
+    }
+
+    /* michath: Custom XOR for imm16. Not really tested */
+    void xorw_im16(int imm, int offset, RegisterID base)
+    {
+    	spew("xorw       $0x%x, %s0x%x(%s)",
+			 imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
+    	m_formatter.prefix(PRE_OPERAND_SIZE);
+    	m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_XOR, base, offset);
+		m_formatter.immediate16(imm);
     }
 
     void xorl_ir(int imm, RegisterID dst)
@@ -1812,9 +1832,9 @@ public:
 
     void movw_i16m_blnd(int imm, int offset, RegisterID base)
     {
-    	int bv = blindingValue();
+    	int bv = blindingValue16();
     	movw_i16m_norm(imm ^ bv, offset, base);
-    	xorl_im( bv, offset, base);
+    	xorw_im16( bv, offset, base);
     }
 
     void movw_i16m_norm(int imm, int offset, RegisterID base)
