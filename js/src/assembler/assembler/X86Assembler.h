@@ -1114,6 +1114,24 @@ public:
             m_formatter.immediate32(imm);
         }
     }
+
+    /* michath: Custom XOR for sign-extended 32imm as 64. Not really tested */
+    void xorq_i32m(int imm, int offset, RegisterID base)
+    {
+    	spew("xorq32       $0x%x, %s0x%x(%s)",
+    			imm, PRETTY_PRINT_OFFSET(offset), nameIReg(8,base));
+    	m_formatter.oneByteOp64(OP_GROUP1_EvIz, GROUP1_OP_XOR,base,offset);
+    	m_formatter.immediate32(imm);
+    }
+
+    /* michath: Custom XOR for sign-extended 32imm as 64. Not really tested */
+	void xorq_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale)
+	{
+		spew("xorq32       $0x%x, %d(%s,%s,%d)",
+				imm, offset, nameIReg(8,base), nameIReg(8,index), 1<<scale);
+		m_formatter.oneByteOp64(OP_GROUP1_EvIz, GROUP1_OP_XOR, base, index, scale, offset);
+		m_formatter.immediate32(imm);
+	}
 #endif
 
     void sarl_i8r(int imm, RegisterID dst)
@@ -2045,19 +2063,53 @@ public:
     /* michath void movq_i32m(int imm, int offset, RegisterID base) */
     void movq_i32m(int imm, int offset, RegisterID base)
     {
+    	if(isConstantBlind())
+    		movq_i32m_blnd(imm, offset, base);
+    	else
+    		movq_i32m_norm(imm, offset, base);
+    }
+
+    void movq_i32m_blnd(int imm, int offset, RegisterID base)
+    {
+    	int bv = blindingValue();
+    	movq_i32m_norm(imm ^ bv, offset, base);
+    	xorq_i32m(bv, offset, base);
+    }
+
+    void movq_i32m_norm(int imm, int offset, RegisterID base)
+    {
         spew("movq       $%d, %s0x%x(%s)",
              imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
         m_formatter.oneByteOp64(OP_GROUP11_EvIz, GROUP11_MOV, base, offset);
         m_formatter.immediate32(imm);
     }
 
+    /* michath void movq_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale) */
     void movq_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
+    	if (isConstantBlind())
+    		movq_i32m_blnd(imm, offset, base, index, scale);
+    	else
+    		movq_i32m_norm(imm, offset, base, index, scale);
+    }
+
+    void movq_i32m_blnd(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
+    	int bv = blindingValue();
+    	movq_i32m_norm(imm^bv, offset, base, index, scale);
+    	xorq_i32m(imm, offset, base, index, scale);
+    }
+
+    void movq_i32m_norm(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
         spew("movq       $%d, %s0x%x(%s)",
              imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
         m_formatter.oneByteOp64(OP_GROUP11_EvIz, GROUP11_MOV, base, index, scale, offset);
         m_formatter.immediate32(imm);
     }
+
+
+
     void movq_i32m(int imm, const void* addr)
     {
         spew("movq       %d, %p", imm, addr);
