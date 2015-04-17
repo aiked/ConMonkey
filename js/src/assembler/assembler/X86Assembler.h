@@ -1062,6 +1062,7 @@ public:
 		m_formatter.immediate16(imm);
     }
 
+    /* michath: Custom XOR for imm16. Not really tested */
     void xorw_im16(int imm, int offset, RegisterID base, RegisterID index, int scale)
 	{
     	spew("xorw       $0x%x, %d(%s,%s,%d)",
@@ -1069,6 +1070,15 @@ public:
 		m_formatter.prefix(PRE_OPERAND_SIZE);
 		m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_XOR, base, index, scale, offset);
 		m_formatter.immediate16(imm);
+	}
+
+    /* michath: Custom XOR for imm32. Not really tested */
+	void xorl_im(int imm, int offset, RegisterID base, RegisterID index, int scale)
+	{
+		spew("xorl       $0x%x, %d(%s,%s,%d)",
+			 imm, offset, nameIReg(base), nameIReg(index), 1<<scale);
+		m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_XOR, base, index, scale, offset);
+		m_formatter.immediate32(imm);
 	}
 
     void xorl_ir(int imm, RegisterID dst)
@@ -1904,7 +1914,23 @@ public:
         m_formatter.immediate16(imm);
     }
 
+    /* michath void movl_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale) */
     void movl_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
+    	if (isConstantBlind())
+    		movl_i32m_blnd(imm, offset, base, index, scale);
+    	else
+    		movl_i32m_norm(imm, offset, base, index, scale);
+    }
+
+    void movl_i32m_blnd(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
+    	int bv = blindingValue();
+    	movl_i32m_norm(imm ^ bv, offset, base, index, scale);
+    	xorl_im(bv, offset, base, index, scale);
+    }
+
+    void movl_i32m_norm(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
         spew("movl       $0x%x, %d(%s,%s,%d)",
              imm, offset, nameIReg(base), nameIReg(index), 1<<scale);
@@ -2016,6 +2042,7 @@ public:
         m_formatter.oneByteOp64(OP_LEA, dst, base, index, scale, offset);
     }
 
+    /* michath void movq_i32m(int imm, int offset, RegisterID base) */
     void movq_i32m(int imm, int offset, RegisterID base)
     {
         spew("movq       $%d, %s0x%x(%s)",
