@@ -463,12 +463,12 @@ public:
     }
 
     int blindingValue16()
-        {
-        	if(blind_value)
-        		return blind_value & 0xFFFF;
-        	blind_value = ConstantBlindRand();
-        	return blind_value & 0xFFFF;
-        }
+	{
+		if(blind_value)
+			return blind_value & 0xFFFF;
+		blind_value = ConstantBlindRand();
+		return blind_value & 0xFFFF;
+	}
 
 
 
@@ -1061,6 +1061,15 @@ public:
     	m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_XOR, base, offset);
 		m_formatter.immediate16(imm);
     }
+
+    void xorw_im16(int imm, int offset, RegisterID base, RegisterID index, int scale)
+	{
+    	spew("xorw       $0x%x, %d(%s,%s,%d)",
+			 imm, offset, nameIReg(base), nameIReg(index), 1<<scale);
+		m_formatter.prefix(PRE_OPERAND_SIZE);
+		m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_XOR, base, index, scale, offset);
+		m_formatter.immediate16(imm);
+	}
 
     void xorl_ir(int imm, RegisterID dst)
     {
@@ -1873,6 +1882,21 @@ public:
     /* michath void movw_i16m(int imm, int offset, RegisterID base, RegisterID index, int scale) */
     void movw_i16m(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
+    	if (isConstantBlind())
+    		movw_i16m_blnd(imm, offset, base, index, scale);
+    	else
+    		movw_i16m_norm(imm, offset, base, index, scale);
+    }
+
+    void movw_i16m_blnd(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
+    	int bv = blindingValue16();
+    	movw_i16m_norm(imm ^ bv, offset, base, index, scale);
+    	xorw_im16(bv, offset, base, index, scale);
+    }
+
+    void movw_i16m_norm(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
         spew("movw       $0x%x, %d(%s,%s,%d)",
              imm, offset, nameIReg(base), nameIReg(index), 1<<scale);
         m_formatter.prefix(PRE_OPERAND_SIZE);
@@ -1892,12 +1916,12 @@ public:
     {
         spew("movl       %%eax, %p", addr);
         m_formatter.oneByteOp(OP_MOV_OvEAX);
-#if WTF_CPU_X86_64
-        m_formatter.immediate64(reinterpret_cast<int64_t>(addr));
-#else
-        m_formatter.immediate32(reinterpret_cast<int>(addr));
-#endif
-    }
+		#if WTF_CPU_X86_64
+				m_formatter.immediate64(reinterpret_cast<int64_t>(addr));
+		#else
+				m_formatter.immediate32(reinterpret_cast<int>(addr));
+		#endif
+	}
 
 #if WTF_CPU_X86_64
     void movq_rr(RegisterID src, RegisterID dst)
