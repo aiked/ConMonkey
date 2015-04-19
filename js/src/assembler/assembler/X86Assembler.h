@@ -448,11 +448,18 @@ public:
     /* michath */
     bool constant_blind = true;
     int  blind_value = 0;
+    int64_t blind_value64 = 0;
     void setConstantBlind(bool _in){ constant_blind = _in; }
     bool isConstantBlind() { return constant_blind; }
 
-    int ConstantBlindRand(){
+    int ConstantBlindRand()
+    {
     	return 0xdeadbeef;
+    }
+    
+    int64_t ConstantBlindRand64()
+    {
+        return 0xfaccbeefdeadbeef;
     }
 
     int blindingValue()
@@ -468,6 +475,14 @@ public:
 	    return blind_value & 0xFFFF;
 	blind_value = ConstantBlindRand();
 	return blind_value & 0xFFFF;
+    }
+
+    int64_t blindingValue64()
+    {
+        if(blind_value64)
+            return blind_value64;
+        blind_value64 = ConstantBlindRand64();
+        return blind_value64;
     }
 
     void nop()
@@ -1122,13 +1137,22 @@ public:
     	m_formatter.immediate32(imm);
     }
 
-    /* michath: Custom XOR for sign-extended 32imm as 64. Not really tested */:
+    /* michath: Custom XOR for sign-extended 32imm as 64. Not really tested */
     void xorq_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
-        spew("xorq32       $0x%x, %d(%s,%s,%d)",
+       spew("xorq32       $0x%x, %d(%s,%s,%d)",
         imm, offset, nameIReg(8,base), nameIReg(8,index), 1<<scale);
         m_formatter.oneByteOp64(OP_GROUP1_EvIz, GROUP1_OP_XOR, base, index, scale, offset);
         m_formatter.immediate32(imm);
+    }
+
+    /* michath: Custom XOR for 64-bit imm. Not really tested */
+    void xorq_i64r(int64_t imm, RegisterID dst)
+    {
+        spew("xorq_i64r       $0x%llx, %s", 
+                (unsigned long long int)imm, nameIReg(8,dst));
+        m_formatter.oneByteOp64(OP_GROUP1_EvIz, GROUP1_OP_XOR, dst);
+        m_formatter.immediate64(imm);
     }
 #endif
 
@@ -1820,17 +1844,17 @@ public:
     void movl_i32r(int imm, RegisterID dst)
     {
     	if (isConstantBlind())
-    		movl_i32r_blnd(imm, dst);
-		else
-			movl_i32r_norm(imm, dst);
+    	    movl_i32r_blnd(imm, dst);
+	else
+	    movl_i32r_norm(imm, dst);
     }
 
     void movl_i32r_blnd(int imm, RegisterID dst)
-	{
+    {
     	int bv = blindingValue();
     	movl_i32r_norm(imm ^ bv, dst);
     	xorl_ir(bv, dst);
-	}
+    }
 
     void movl_i32r_norm(int imm, RegisterID dst)
     {
@@ -2106,8 +2130,6 @@ public:
         m_formatter.immediate32(imm);
     }
 
-
-
     void movq_i32m(int imm, const void* addr)
     {
         spew("movq       %d, %p", imm, addr);
@@ -2121,14 +2143,48 @@ public:
     // Note also that this is similar to the movl_i32r instruction, except that
     // movl_i32r *zero*-extends its 32-bit immediate, and it has smaller code
     // size, so it's preferred for values which could use either.
-    void movq_i32r(int imm, RegisterID dst) {
+
+    /* michath movq_i32r(int imm, Register dst) */
+    void movq_i32r(int imm, RegisterID dst)
+    {
+        if(isConstantBlind())
+            movq_i32r_blnd(imm, dst);
+        else
+            movq_i32r_norm(imm, dst);
+    }
+
+    void movq_i32r_blnd(int imm, RegisterID dst)
+    {
+        int bv = blindingValue();
+        movq_i32r_norm(imm ^ bv, dst);
+        xorq_ir(bv, dst);
+    }
+
+    void movq_i32r_norm(int imm, RegisterID dst) {
         spew("movq       $%d, %s",
              imm, nameIReg(dst));
         m_formatter.oneByteOp64(OP_GROUP11_EvIz, GROUP11_MOV, dst);
         m_formatter.immediate32(imm);
     }
 
+    /* movq_i64r(int64_t imm, RegisterID dst) */
     void movq_i64r(int64_t imm, RegisterID dst)
+    {
+        if(isConstantBlind())
+            movq_i64r_blnd(imm, dst);
+        else
+            movq_i64r_norm(imm, dst);
+    }
+
+    /* TODO xorq is not working, we have to find another way */
+    void movq_i64r_blnd(int64_t imm, RegisterID dst)
+    {
+        /* int64_t bv = blindingValue64(); */ 
+        movq_i64r_norm(imm, dst);
+        /* xorq_i64r( imm, dst); */
+    }
+
+    void movq_i64r_norm(int64_t imm, RegisterID dst)
     {
         spew("movabsq    $0x%llx, %s",
              (unsigned long long int)imm, nameIReg(8,dst));
