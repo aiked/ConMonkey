@@ -3,6 +3,8 @@
 *.lo
 *.o
 *.obj
+# Compiled Python Scripts
+*.pyc
 
 # Precompiled Headers
 *.gch
@@ -29,3 +31,7 @@
 
 # Special files
 js/src/configure
+
+# Eclipse related files
+js/src/.cproject
+js/src/.project
