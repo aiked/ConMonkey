@@ -448,9 +448,15 @@ public:
     /* michath */
     bool constant_blind = true;
     int  blind_value = 0;
+    int  blind_value8 = 0;
     int64_t blind_value64 = 0;
     void setConstantBlind(bool _in){ constant_blind = _in; }
     bool isConstantBlind() { return constant_blind; }
+
+    int ConstantBlindRand8()
+    {
+        return 0xd;
+    }
 
     int ConstantBlindRand()
     {
@@ -467,6 +473,13 @@ public:
     	if(blind_value)
 	    return blind_value;
     	return blind_value = ConstantBlindRand();
+    }
+    
+    int blindingValue8()
+    {
+    	if(blind_value8)
+	    return blind_value8;
+    	return blind_value8 = ConstantBlindRand8();
     }
 
     int blindingValue16()
@@ -575,7 +588,30 @@ public:
         m_formatter.oneByteOp(OP_ADD_EvGv, src, base, offset);
     }
 
+    /* michath void addl_ir(int imm, RegisterID dst) */
     void addl_ir(int imm, RegisterID dst)
+    {
+        if (isConstantBlind())
+            addl_ir_blnd(imm, dst);
+        else
+            addl_ir_norm(imm, dst);    
+    }
+
+    void addl_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            addl_ir_norm(imm-bv, dst);
+            addl_ir_norm(bv, dst);
+        } else {
+            bv = blindingValue();
+            addl_ir_norm(imm-bv, dst);
+            addl_ir_norm(bv, dst);
+        }
+    }
+
+    void addl_ir_norm(int imm, RegisterID dst)
     {
         spew("addl       $0x%x, %s", imm, nameIReg(4,dst));
         if (CAN_SIGN_EXTEND_8_32(imm)) {
@@ -586,7 +622,7 @@ public:
             m_formatter.immediate32(imm);
         }
     }
-
+    
     void addl_im(int imm, int offset, RegisterID base)
     {
         spew("addl       $%d, %s0x%x(%s)",
@@ -1092,7 +1128,21 @@ public:
 			    imm, offset, nameIReg(base), nameIReg(index), 1<<scale);
             m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_XOR, base, index, scale, offset);
             m_formatter.immediate32(imm);
-	}
+    }
+    
+    void xorl_ir8(int imm, RegisterID dst)
+    {
+        spew("xorb       $%d, %s", imm, nameIReg(4,dst));
+        m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_XOR, dst);
+        m_formatter.immediate8(imm);
+    }
+    
+    void xorl_ir32(int imm, RegisterID dst)
+    {
+        spew("xorl       $%d, %s", imm, nameIReg(4,dst));
+        m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_XOR, dst);
+        m_formatter.immediate32(imm);
+    }
 
     void xorl_ir(int imm, RegisterID dst)
     {
