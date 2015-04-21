@@ -1,3 +1,7 @@
+# dist directories
+js/src/_DBG.OBJ
+js/src/_OPT.OBJ
+
 # Compiled Object files
 *.slo
 *.lo
