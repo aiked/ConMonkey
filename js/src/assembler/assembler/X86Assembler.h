@@ -682,39 +682,110 @@ public:
              addr, nameIReg(8, dst));
         m_formatter.oneByteOp64(OP_ADD_GvEv, dst, addr);
     }
-
+    /* michath void addq_ir(int imm, RegisterID dst) */
     void addq_ir(int imm, RegisterID dst)
     {
-        spew("addq       $0x%x, %s", imm, nameIReg(8,dst));
+        if (isConstantBlind())
+            addq_ir_blnd(imm, dst);
+        else 
+            addq_ir_norm(imm, dst);
+    }
+
+    void addq_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
         if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            addq_ir_norm(imm-bv, dst);
+            addq_ir_norm(bv, dst);
+        } else {
+            bv = blindingValue();
+            addq_ir_norm(imm-bv, dst);
+            addq_ir_norm(bv, dst);
+        }
+    }
+
+    void addq_ir_norm(int imm, RegisterID dst)
+    {
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            spew("addqb       $0x%x, %s", imm, nameIReg(8,dst));
             m_formatter.oneByteOp64(OP_GROUP1_EvIb, GROUP1_OP_ADD, dst);
             m_formatter.immediate8(imm);
         } else {
+            spew("addq       $0x%x, %s", imm, nameIReg(8,dst));
             m_formatter.oneByteOp64(OP_GROUP1_EvIz, GROUP1_OP_ADD, dst);
             m_formatter.immediate32(imm);
         }
     }
 
+    /* michath void addq_im(int imm, int offset, RegisterID base) */
     void addq_im(int imm, int offset, RegisterID base)
     {
-        spew("addq       $0x%x, %s0x%x(%s)",
-             imm, PRETTY_PRINT_OFFSET(offset), nameIReg(8,base));
+        if (isConstantBlind())
+            addq_im_blnd(imm, offset, base);
+        else
+            addq_im_norm(imm, offset, base);
+    }
+
+    void addq_im_blnd(int imm, int offset, RegisterID base)
+    {
+        int bv;
         if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            addq_im_norm(imm-bv, offset, base);
+            addq_im_norm(bv, offset, base);
+        } else {
+            bv = blindingValue();
+            addq_im_norm(imm-bv, offset, base);
+            addq_im_norm(bv, offset, base);
+        }
+    }
+
+    void addq_im_norm(int imm, int offset, RegisterID base)
+    {
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            spew("addqb       $0x%x, %s0x%x(%s)",
+                    imm, PRETTY_PRINT_OFFSET(offset), nameIReg(8,base));
             m_formatter.oneByteOp64(OP_GROUP1_EvIb, GROUP1_OP_ADD, base, offset);
             m_formatter.immediate8(imm);
         } else {
+            spew("addq       $0x%x, %s0x%x(%s)",
+                     imm, PRETTY_PRINT_OFFSET(offset), nameIReg(8,base));
             m_formatter.oneByteOp64(OP_GROUP1_EvIz, GROUP1_OP_ADD, base, offset);
             m_formatter.immediate32(imm);
         }
     }
-
+    /* michath void addq_im(int imm, const void* addr) */
     void addq_im(int imm, const void* addr)
     {
-        spew("addq       %d, %p", imm, addr);
+        if (isConstantBlind())
+            addq_im_blnd(imm, addr);
+        else
+            addq_im_norm(imm, addr);
+    }
+
+    void addq_im_blnd(int imm, const void* addr)
+    {
+        int bv;
         if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            addq_im_norm(imm-bv, addr);
+            addq_im_norm(bv, addr);
+        } else {
+            bv = blindingValue();
+            addq_im_norm(imm-bv, addr);
+            addq_im_norm(bv, addr);
+        }
+    }
+
+    void addq_im_norm(int imm, const void* addr)
+    {
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            spew("addqb       %d, %p", imm, addr);
             m_formatter.oneByteOp64(OP_GROUP1_EvIb, GROUP1_OP_ADD, addr);
             m_formatter.immediate8(imm);
         } else {
+            spew("addq       %d, %p", imm, addr);
             m_formatter.oneByteOp64(OP_GROUP1_EvIz, GROUP1_OP_ADD, addr);
             m_formatter.immediate32(imm);
         }
