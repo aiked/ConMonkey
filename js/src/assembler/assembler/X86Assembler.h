@@ -349,6 +349,7 @@ private:
     }
 
     typedef enum {
+        
         GROUP1_OP_ADD = 0,
         GROUP1_OP_OR  = 1,
         GROUP1_OP_ADC = 2,
@@ -450,8 +451,12 @@ public:
     int  blind_value = 0;
     int  blind_value8 = 0;
     int64_t blind_value64 = 0;
+
+    RegisterID tmpReg = RegisterID::esi;
+
     void setConstantBlind(bool _in){ constant_blind = _in; }
-    bool isConstantBlind() { return constant_blind; }
+    bool isConstantBlind(){ return constant_blind; }
+    RegisterID getTmpReg(){ return tmpReg; }
 
     int ConstantBlindRand8()
     {
@@ -791,13 +796,37 @@ public:
         }
     }
 #endif
+    /* michath void addl_im(int imm, const void* addr) */
     void addl_im(int imm, const void* addr)
     {
-        spew("addl       %d, %p", imm, addr);
+        if (isConstantBlind())
+            addl_im_blnd(imm, addr);
+        else
+            addl_im_norm(imm, addr);
+    }
+
+    void addl_im_blnd(int imm, const void* addr)
+    {
+        int bv;
         if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            addl_im_norm(imm-bv, addr);
+            addl_im_norm(bv, addr);
+        } else {
+            bv = blindingValue();
+            addl_im_norm(imm-bv, addr);
+            addl_im_norm(bv, addr);
+        }
+    }
+
+    void addl_im_norm(int imm, const void* addr)
+    {
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            spew("addlb       %d, %p", imm, addr);
             m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_ADD, addr);
             m_formatter.immediate8(imm);
         } else {
+            spew("addl       %d, %p", imm, addr);
             m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_ADD, addr);
             m_formatter.immediate32(imm);
         }
@@ -841,7 +870,34 @@ public:
         m_formatter.oneByteOp(OP_AND_EvGv, src, base, offset);
     }
 
+    /* void andl_ir(int imm, RegisterID dst) */
     void andl_ir(int imm, RegisterID dst)
+    {
+        if (isConstantBlind())
+            andl_ir_blnd(imm, dst);
+        else
+            andl_ir_norm(imm, dst);
+    }
+
+    void andl_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            push_r(getTmpReg());
+            movl_i32r(imm^bv, getTmpReg());
+            andl_rr(getTmpReg(), dst);
+            pop_r(getTmpReg());
+        } else {
+            bv = blindingValue();
+            push_r(getTmpReg());
+            movl_i32r(imm^bv, getTmpReg());
+            andl_rr(getTmpReg(), dst);
+            pop_r(getTmpReg()); 
+        }
+    }
+    
+    void andl_ir_norm(int imm, RegisterID dst)
     {
         spew("andl       $0x%x, %s", imm, nameIReg(4,dst));
         if (CAN_SIGN_EXTEND_8_32(imm)) {

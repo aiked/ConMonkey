@@ -17,6 +17,11 @@ void addl_im(int imm, int offset, RegisterID base)
 void addq_ir(int imm, RegisterID dst)
 void addq_im(int imm, int offset, RegisterID base)
 void addq_im(int imm, const void* addr)
+void addl_im(int imm, const void* addr)
+
+WITH_TEMP_REGISTER
+==================
+void andl_ir(int imm, RegisterID dst)
 
 TODO
 ====    
