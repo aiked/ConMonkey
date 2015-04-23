@@ -1461,8 +1461,31 @@ public:
              nameIReg(4,src), PRETTY_PRINT_OFFSET(offset), nameIReg(base));
         m_formatter.oneByteOp(OP_XOR_EvGv, src, base, offset);
     }
-
+    
+    /* michath void xorl_im(int imm, int offset, RegisterID base) */
     void xorl_im(int imm, int offset, RegisterID base)
+    {
+        if (isConstantBlind())
+            xorl_im_blnd(imm, offset, base);
+        else
+            xorl_im_norm(imm, offset, base);
+    }
+
+    void xorl_im_blnd(int imm, int offset, RegisterID base)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            xorl_im_norm(imm^bv, offset, base);
+            xorl_im_norm(bv, offset, base);
+        } else {
+            bv = blindingValue();
+            xorl_im_norm(imm^bv, offset, base);
+            xorl_im_norm(bv, offset, base);
+        } 
+    }
+
+    void xorl_im_norm(int imm, int offset, RegisterID base)
     {
         if (CAN_SIGN_EXTEND_8_32(imm)) {
         	spew("xorb       $0x%x, %s0x%x(%s)",
@@ -1506,21 +1529,30 @@ public:
             m_formatter.immediate32(imm);
     }
     
-    void xorl_ir8(int imm, RegisterID dst)
+    /* michath void xorl_ir(int imm, RegisterID dst) */
+    void xorl_ir(int imm, RegisterID dst)
     {
-        spew("xorb       $%d, %s", imm, nameIReg(4,dst));
-        m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_XOR, dst);
-        m_formatter.immediate8(imm);
-    }
-    
-    void xorl_ir32(int imm, RegisterID dst)
-    {
-        spew("xorl       $%d, %s", imm, nameIReg(4,dst));
-        m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_XOR, dst);
-        m_formatter.immediate32(imm);
+        if (isConstantBlind())
+            xorl_ir_blnd(imm, dst);
+        else
+            xorl_ir_norm(imm, dst);
     }
 
-    void xorl_ir(int imm, RegisterID dst)
+    void xorl_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            xorl_ir_norm(imm^bv, dst);
+            xorl_ir_norm(bv, dst);
+        } else {
+            bv = blindingValue();
+            xorl_ir_norm(imm^bv, dst);
+            xorl_ir_norm(bv, dst);
+        }
+    }
+
+    void xorl_ir_norm(int imm, RegisterID dst)
     {
         spew("xorl       $%d, %s",
              imm, nameIReg(4,dst));
@@ -1540,8 +1572,31 @@ public:
              nameIReg(8,src), nameIReg(8, dst));
         m_formatter.oneByteOp64(OP_XOR_EvGv, src, dst);
     }
-
+    
+    /* michath void xorq_ir(int imm, RegisterID dst) */
     void xorq_ir(int imm, RegisterID dst)
+    {
+        if (isConstantBlind())
+            xorq_ir_blnd(imm, dst);
+        else
+            xorq_ir_norm(imm, dst);
+    }
+    
+    void xorq_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            xorq_ir_norm(imm^bv, dst);
+            xorq_ir_norm(bv, dst);
+        } else {
+            bv = blindingValue();
+            xorq_ir_norm(imm^bv, dst);
+            xorq_ir_norm(bv, dst);
+        }
+    }
+    
+    void xorq_ir_norm(int imm, RegisterID dst)
     {
         spew("xorq       $%d, %s",
              imm, nameIReg(8,dst));
@@ -2279,7 +2334,7 @@ public:
     {
     	int bv = blindingValue();
     	movl_i32r_norm(imm ^ bv, dst);
-    	xorl_ir(bv, dst);
+    	xorl_ir_norm(bv, dst);
     }
 
     void movl_i32r_norm(int imm, RegisterID dst)
@@ -2344,7 +2399,7 @@ public:
     {
     	int bv = blindingValue();
     	movl_i32m_norm(imm ^ bv, offset, base);
-    	xorl_im( bv, offset, base);
+    	xorl_im_norm(bv, offset, base);
     }
 
     void movl_i32m_norm(int imm, int offset, RegisterID base)
@@ -2583,7 +2638,7 @@ public:
     {
         int bv = blindingValue();
         movq_i32r_norm(imm ^ bv, dst);
-        xorq_ir(bv, dst);
+        xorq_ir_norm(bv, dst);
     }
 
     void movq_i32r_norm(int imm, RegisterID dst) {
