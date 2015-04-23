@@ -1100,7 +1100,34 @@ public:
         m_formatter.oneByteOp(OP_OR_EvGv, src, base, offset);
     }
 
+    /* michath void orl_ir(int imm, RegisterID dst) */
     void orl_ir(int imm, RegisterID dst)
+    {
+        if (isConstantBlind())
+            orl_ir_blnd(imm, dst);
+        else
+            orl_ir_norm(imm, dst);
+    }
+    
+    void orl_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            push_r(getTmpReg());
+            movl_i32r(imm^bv, getTmpReg());
+            orl_rr(getTmpReg(), dst);
+            pop_r(getTmpReg());
+        } else {
+            bv = blindingValue();
+            push_r(getTmpReg());
+            movl_i32r(imm^bv, getTmpReg());
+            orl_rr(getTmpReg(), dst);
+            pop_r(getTmpReg()); 
+        }
+    }
+    
+    void orl_ir_norm(int imm, RegisterID dst)
     {
         spew("orl        $0x%x, %s", imm, nameIReg(4,dst));
         if (CAN_SIGN_EXTEND_8_32(imm)) {
@@ -1111,8 +1138,35 @@ public:
             m_formatter.immediate32(imm);
         }
     }
-
+    
+    /* michath void orl_im(int imm, int offset, RegisterID base) */
     void orl_im(int imm, int offset, RegisterID base)
+    {
+        if (isConstantBlind())
+            orl_im_blnd(imm, offset, base);
+        else
+            orl_im_norm(imm, offset, base);
+    }
+    
+    void orl_im_blnd(int imm, int offset, RegisterID base)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            push_r(getTmpReg());
+            movl_i32m(imm^bv, offset, getTmpReg());
+            orl_rm(getTmpReg(), offset, base);
+            pop_r(getTmpReg());
+        } else {
+            bv = blindingValue();
+            push_r(getTmpReg());
+            movl_i32m(imm^bv, offset, getTmpReg());
+            orl_rm(getTmpReg(), offset, base);
+            pop_r(getTmpReg()); 
+        }
+    }
+    
+    void orl_im_norm(int imm, int offset, RegisterID base)
     {
         spew("orl        $0x%x, %s0x%x(%s)",
              imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
@@ -1138,8 +1192,35 @@ public:
              nameIReg(8,src), nameIReg(8,dst));
         m_formatter.oneByteOp64(OP_OR_EvGv, src, dst);
     }
-
+    
+    /* michath void orq_ir(int imm, RegisterID dst) */
     void orq_ir(int imm, RegisterID dst)
+    {
+        if (isConstantBlind())
+            orq_ir_blnd(imm, dst);
+        else
+            orq_ir_norm(imm, dst);
+    }
+    
+    void orq_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            push_r(getTmpReg());
+            movq_i32r(imm^bv, getTmpReg());
+            orl_rr(getTmpReg(), dst);
+            pop_r(getTmpReg());
+        } else {
+            bv = blindingValue();
+            push_r(getTmpReg());
+            movq_i32r(imm^bv, getTmpReg());
+            orq_rr(getTmpReg(), dst);
+            pop_r(getTmpReg()); 
+        }
+    }
+    
+    void orq_ir_norm(int imm, RegisterID dst)
     {
         spew("orq        $0x%x, %s", imm, nameIReg(8,dst));
         if (CAN_SIGN_EXTEND_8_32(imm)) {
@@ -1190,8 +1271,30 @@ public:
              nameIReg(4,src), PRETTY_PRINT_OFFSET(offset), nameIReg(base));
         m_formatter.oneByteOp(OP_SUB_EvGv, src, base, offset);
     }
-
+    /* michath void subl_ir(int imm, RegisterID dst) */
     void subl_ir(int imm, RegisterID dst)
+    {
+        if (isConstantBlind())
+            subl_ir_blnd(imm, dst);
+        else
+            subl_ir_norm(imm, dst);
+    }
+    
+    void subl_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            subl_ir_norm(imm-bv, dst);
+            subl_ir_norm(bv, dst);
+        } else {
+            bv = blindingValue();
+            subl_ir_norm(imm-bv, dst);
+            subl_ir_norm(bv, dst);
+        }
+    }
+
+    void subl_ir_norm(int imm, RegisterID dst)
     {
         spew("subl       $0x%x, %s", imm, nameIReg(4, dst));
         if (CAN_SIGN_EXTEND_8_32(imm)) {
@@ -1202,8 +1305,30 @@ public:
             m_formatter.immediate32(imm);
         }
     }
-
+    /* michath void subl_im(int imm, int offset, RegisterID base) */
     void subl_im(int imm, int offset, RegisterID base)
+    {
+        if (isConstantBlind())
+            subl_im_blnd(imm, offset, base);
+        else
+            subl_im_norm(imm, offset, base);
+    }
+    
+    void subl_im_blnd(int imm, int offset, RegisterID base)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            subl_im_norm(imm-bv, offset, base);
+            subl_im_norm(bv, offset, base);
+        } else {
+            bv = blindingValue();
+            subl_im_norm(imm-bv, offset, base);
+            subl_im_norm(bv, offset, base);
+        }
+    }
+    
+    void subl_im_norm(int imm, int offset, RegisterID base)
     {
         spew("subl       $0x%x, %s0x%x(%s)",
              imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
@@ -1244,8 +1369,30 @@ public:
              addr, nameIReg(8, dst));
         m_formatter.oneByteOp64(OP_SUB_GvEv, dst, addr);
     }
-
+    /* michath void subq_ir(int imm, RegisterID dst) */
     void subq_ir(int imm, RegisterID dst)
+    {
+        if (isConstantBlind())
+            subq_ir_blnd(imm, dst);
+        else
+            subq_ir_norm(imm, dst);
+    }
+    
+    void subq_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            subq_ir_norm(imm-bv, dst);
+            subq_ir_norm(bv, dst);
+        } else {
+            bv = blindingValue();
+            subq_ir_norm(imm-bv, dst);
+            subq_ir_norm(bv, dst);
+        }
+    }
+    
+    void subq_ir_norm(int imm, RegisterID dst)
     {
         spew("subq       $0x%x, %s", imm, nameIReg(8,dst));
         if (CAN_SIGN_EXTEND_8_32(imm)) {
@@ -1257,9 +1404,33 @@ public:
         }
     }
 #else
+    /* michath void subl_im(int imm, const void* addr) */
     void subl_im(int imm, const void* addr)
     {
-        FIXME_INSN_PRINTING;
+        if (isConstantBlind())
+            subl_im_blnd(imm, addr);
+        else
+            subl_im_norm(imm, addr);
+    }
+    
+    void subl_im_blnd(int imm, const void* addr)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            subl_im_norm(imm-bv, addr);
+            subl_im_norm(bv, addr);
+        } else {
+            bv = blindingValue();
+            subl_im_norm(imm-bv, addr);
+            subl_im_norm(bv, addr);
+        }
+    }
+    
+    void subl_im_norm(int imm, const void* addr)
+    {
+        /* FIXME_INSN_PRINTING; */
+        spew("subl       %d, %p", imm, addr);
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_SUB, addr);
             m_formatter.immediate8(imm);

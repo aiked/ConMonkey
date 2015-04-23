@@ -17,13 +17,23 @@ void addq_im(int imm, int offset, RegisterID base)
 void addq_im(int imm, const void* addr)
 void addl_im(int imm, const void* addr)
 
+void subl_ir(int imm, RegisterID dst)
+void subl_im(int imm, int offset, RegisterID base)
+void subq_ir(int imm, RegisterID dst)
+void subl_im(int imm, const void* addr)
+
 WITH_TEMP_REGISTER
 ==================
 void andl_ir(int imm, RegisterID dst)
 void andl_im(int imm, int offset, RegisterID base)
 void andq_ir(int imm, RegisterID dst)
 
+void orl_ir(int imm, RegisterID dst)
+void orl_im(int imm, int offset, RegisterID base)
+void orq_ir(int imm, RegisterID dst)
+
 TODO
 ====    
 void andl_im(int imm, const void* addr)
+void orl_im(int imm, const void* addr)
 void movq_i32m(int imm, const void* addr)
