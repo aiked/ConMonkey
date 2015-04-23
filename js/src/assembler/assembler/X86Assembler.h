@@ -878,20 +878,22 @@ public:
         else
             andl_ir_norm(imm, dst);
     }
-
+    
     void andl_ir_blnd(int imm, RegisterID dst)
     {
         int bv;
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             bv = blindingValue8();
             push_r(getTmpReg());
-            movl_i32r(imm^bv, getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
             andl_rr(getTmpReg(), dst);
             pop_r(getTmpReg());
         } else {
             bv = blindingValue();
             push_r(getTmpReg());
-            movl_i32r(imm^bv, getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
             andl_rr(getTmpReg(), dst);
             pop_r(getTmpReg()); 
         }
@@ -923,13 +925,15 @@ public:
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             bv = blindingValue8();
             push_r(getTmpReg());
-            movl_i32m(imm^bv, offset, getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
             andl_rm(getTmpReg(), offset, base);
             pop_r(getTmpReg());
         } else {
             bv = blindingValue();
             push_r(getTmpReg());
-            movl_i32m(imm^bv, offset, getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
             andl_rm(getTmpReg(), offset, base);
             pop_r(getTmpReg()); 
         }
@@ -990,11 +994,7 @@ public:
     {
         int bv;
         if (CAN_SIGN_EXTEND_8_32(imm)) {
-            bv = blindingValue8();
-            push_r(getTmpReg());
-            movq_i32r(imm^bv, getTmpReg());
-            andl_rr(getTmpReg(), dst);
-            pop_r(getTmpReg());
+            andq_ir_norm(imm, dst);
         } else {
             bv = blindingValue();
             push_r(getTmpReg());
@@ -1115,13 +1115,15 @@ public:
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             bv = blindingValue8();
             push_r(getTmpReg());
-            movl_i32r(imm^bv, getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
             orl_rr(getTmpReg(), dst);
             pop_r(getTmpReg());
         } else {
             bv = blindingValue();
             push_r(getTmpReg());
-            movl_i32r(imm^bv, getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
             orl_rr(getTmpReg(), dst);
             pop_r(getTmpReg()); 
         }
@@ -1154,13 +1156,16 @@ public:
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             bv = blindingValue8();
             push_r(getTmpReg());
-            movl_i32m(imm^bv, offset, getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
             orl_rm(getTmpReg(), offset, base);
             pop_r(getTmpReg());
         } else {
             bv = blindingValue();
             push_r(getTmpReg());
-            movl_i32m(imm^bv, offset, getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
+            orl_rm(getTmpReg(), offset, base);
             orl_rm(getTmpReg(), offset, base);
             pop_r(getTmpReg()); 
         }
@@ -1206,11 +1211,7 @@ public:
     {
         int bv;
         if (CAN_SIGN_EXTEND_8_32(imm)) {
-            bv = blindingValue8();
-            push_r(getTmpReg());
-            movq_i32r(imm^bv, getTmpReg());
-            orl_rr(getTmpReg(), dst);
-            pop_r(getTmpReg());
+            orq_ir_norm(imm, dst);
         } else {
             bv = blindingValue();
             push_r(getTmpReg());
