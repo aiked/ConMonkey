@@ -1824,7 +1824,33 @@ public:
         m_formatter.oneByteOp(OP_CMP_GvEv, src, base, offset);
     }
 
+    
+    /* michath void cmpl_ir(int imm, RegisterID dst) */
     void cmpl_ir(int imm, RegisterID dst)
+    {
+        if (isConstantBlind())
+            cmpl_ir_norm(imm, dst);
+        else
+            cmpl_ir_norm(imm, dst);
+    }
+
+    void cmpl_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            addl_ir_norm(bv, dst);
+            cmpl_ir_norm(imm+bv, dst);
+            subl_ir_norm(bv, dst);
+        } else {
+            bv = blindingValue();
+            addl_ir_norm(bv, dst);
+            cmpl_ir_norm(imm+bv, dst);
+            subl_ir_norm(bv, dst);
+        }
+    }
+    
+    void cmpl_ir_norm(int imm, RegisterID dst)
     {
         if (imm == 0) {
             testl_rr(dst, dst);

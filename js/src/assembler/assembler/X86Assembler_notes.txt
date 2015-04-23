@@ -12,6 +12,8 @@ void xorl_ir32(int imm, RegisterID dst)
 void xorl_im(int imm, int offset, RegisterID base)
 void xorq_ir(int imm, RegisterID dst)
 
+void cmpl_ir(int imm, RegisterID dst)
+
 TOFIX
 =====
 void addl_ir(int imm, RegisterID dst)
@@ -41,3 +43,4 @@ TODO
 void andl_im(int imm, const void* addr)
 void orl_im(int imm, const void* addr)
 void movq_i32m(int imm, const void* addr)
+void imull_i32r(RegisterID src, int32_t value, RegisterID dst)
