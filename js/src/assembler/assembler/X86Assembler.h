@@ -870,7 +870,7 @@ public:
         m_formatter.oneByteOp(OP_AND_EvGv, src, base, offset);
     }
 
-    /* void andl_ir(int imm, RegisterID dst) */
+    /* michath void andl_ir(int imm, RegisterID dst) */
     void andl_ir(int imm, RegisterID dst)
     {
         if (isConstantBlind())
@@ -908,8 +908,34 @@ public:
             m_formatter.immediate32(imm);
         }
     }
-
+    /* michath void andl_im(int imm, int offset, RegisterID base) */
     void andl_im(int imm, int offset, RegisterID base)
+    {
+        if (isConstantBlind())
+            andl_im_blnd(imm, offset, base);
+        else    
+            andl_im_norm(imm, offset, base);
+    }
+
+    void andl_im_blnd(int imm, int offset, RegisterID base)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            push_r(getTmpReg());
+            movl_i32m(imm^bv, offset, getTmpReg());
+            andl_rm(getTmpReg(), offset, base);
+            pop_r(getTmpReg());
+        } else {
+            bv = blindingValue();
+            push_r(getTmpReg());
+            movl_i32m(imm^bv, offset, getTmpReg());
+            andl_rm(getTmpReg(), offset, base);
+            pop_r(getTmpReg()); 
+        }
+    }
+    
+    void andl_im_norm(int imm, int offset, RegisterID base)
     {
         spew("andl       $0x%x, %s0x%x(%s)",
              imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
@@ -950,8 +976,35 @@ public:
              addr, nameIReg(8, dst));
         m_formatter.oneByteOp64(OP_OR_GvEv, dst, addr);
     }
-
+    
+    /* michath void andq_ir(int imm, RegisterID dst) */
     void andq_ir(int imm, RegisterID dst)
+    {
+        if (isConstantBlind())
+            andq_ir_blnd(imm, dst);
+        else
+            andq_ir_norm(imm, dst);
+    }
+    
+    void andq_ir_blnd(int imm, RegisterID dst)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            push_r(getTmpReg());
+            movq_i32r(imm^bv, getTmpReg());
+            andl_rr(getTmpReg(), dst);
+            pop_r(getTmpReg());
+        } else {
+            bv = blindingValue();
+            push_r(getTmpReg());
+            movq_i32r(imm^bv, getTmpReg());
+            andq_rr(getTmpReg(), dst);
+            pop_r(getTmpReg()); 
+        }
+    }
+    
+    void andq_ir_norm(int imm, RegisterID dst)
     {
         spew("andq       $0x%x, %s", imm, nameIReg(8,dst));
         if (CAN_SIGN_EXTEND_8_32(imm)) {

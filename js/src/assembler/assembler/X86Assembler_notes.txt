@@ -1,12 +1,10 @@
 Functions changed
 =================
-
 void movl_i32r(int imm, RegisterID dst)
 void movw_i16m(int imm, int offset, RegisterID base)
 void movl_i32m(int imm, int offset, RegisterID base)
 void movw_i16m(int imm, int offset, RegisterID base, RegisterID index, int scale)
 void movl_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale)
-
 void movq_i32m(int imm, int offset, RegisterID base)
 void movq_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale)
 
@@ -22,7 +20,10 @@ void addl_im(int imm, const void* addr)
 WITH_TEMP_REGISTER
 ==================
 void andl_ir(int imm, RegisterID dst)
+void andl_im(int imm, int offset, RegisterID base)
+void andq_ir(int imm, RegisterID dst)
 
 TODO
 ====    
+void andl_im(int imm, const void* addr)
 void movq_i32m(int imm, const void* addr)
