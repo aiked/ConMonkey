@@ -38,6 +38,11 @@ void orl_ir(int imm, RegisterID dst)
 void orl_im(int imm, int offset, RegisterID base)
 void orq_ir(int imm, RegisterID dst)
 
+void cmpl_ir(int imm, RegisterID dst)
+void cmpl_ir_force32(int imm, RegisterID dst)
+void cmpl_im(int imm, int offset, RegisterID base)
+void cmpb_im(int imm, int offset, RegisterID base)
+
 TODO
 ====    
 void andl_im(int imm, const void* addr)

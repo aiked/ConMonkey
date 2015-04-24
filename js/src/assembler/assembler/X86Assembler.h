@@ -452,7 +452,7 @@ public:
     int  blind_value8 = 0;
     int64_t blind_value64 = 0;
 
-    RegisterID tmpReg = RegisterID::esi;
+    RegisterID tmpReg = RegisterID::r15;
 
     void setConstantBlind(bool _in){ constant_blind = _in; }
     bool isConstantBlind(){ return constant_blind; }
@@ -1829,7 +1829,7 @@ public:
     void cmpl_ir(int imm, RegisterID dst)
     {
         if (isConstantBlind())
-            cmpl_ir_norm(imm, dst);
+            cmpl_ir_blnd(imm, dst);
         else
             cmpl_ir_norm(imm, dst);
     }
@@ -1839,14 +1839,18 @@ public:
         int bv;
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             bv = blindingValue8();
-            addl_ir_norm(bv, dst);
-            cmpl_ir_norm(imm+bv, dst);
-            subl_ir_norm(bv, dst);
+            push_r(getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
+            cmpl_rr(getTmpReg(), dst);
+            pop_r(getTmpReg());
         } else {
             bv = blindingValue();
-            addl_ir_norm(bv, dst);
-            cmpl_ir_norm(imm+bv, dst);
-            subl_ir_norm(bv, dst);
+            push_r(getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
+            cmpl_rr(getTmpReg(), dst);
+            pop_r(getTmpReg());
         }
     }
     
@@ -1867,14 +1871,62 @@ public:
         }
     }
 
+    /* michath void cmpl_ir_force32(int imm, RegisterID dst) */
     void cmpl_ir_force32(int imm, RegisterID dst)
+    {
+        if (isConstantBlind())
+            cmpl_ir_force32_blnd(imm, dst);
+        else
+            cmpl_ir_force32_norm(imm, dst);
+    }
+    
+    void cmpl_ir_force32_blnd(int imm, RegisterID dst)
+    {
+            int bv = blindingValue();
+            push_r(getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
+            cmpl_rr(getTmpReg(), dst);
+            pop_r(getTmpReg());
+    }
+    
+    void cmpl_ir_force32_norm(int imm, RegisterID dst)
     {
         spew("cmpl       $0x%x, %s", imm, nameIReg(4, dst));
         m_formatter.oneByteOp(OP_GROUP1_EvIz, GROUP1_OP_CMP, dst);
         m_formatter.immediate32(imm);
     }
 
+    /* michath void cmpl_im(int imm, int offset, RegisterID base) */
     void cmpl_im(int imm, int offset, RegisterID base)
+    {
+        if (isConstantBlind())
+            cmpl_im_blnd(imm, offset, base);
+        else
+            cmpl_im_norm(imm, offset, base);
+    }
+    
+    void cmpl_im_blnd(int imm, int offset, RegisterID base)
+    {
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            push_r(getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
+            cmpl_rm(getTmpReg(), offset, base);
+            pop_r(getTmpReg());
+        } else {
+            bv = blindingValue();
+            push_r(getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir(bv, getTmpReg());
+            cmpl_rm(getTmpReg(), offset, base);
+            pop_r(getTmpReg());
+        }
+    }
+    
+    void cmpl_im_norm(int imm, int offset, RegisterID base)
     {
         spew("cmpl       $0x%x, %s0x%x(%s)",
              imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
@@ -1887,8 +1939,29 @@ public:
         }
     }
 
+    /* michath void cmpb_im(int imm, int offset, RegisterID base) */
     void cmpb_im(int imm, int offset, RegisterID base)
     {
+        if (isConstantBlind())
+            cmpb_im_blnd(imm, offset, base);
+        else
+            cmpb_im_norm(imm, offset, base);
+    }
+    
+    void cmpb_im_blnd(int imm, int offset, RegisterID base)
+    {    
+        int bv = blindingValue8();
+        push_r(getTmpReg());
+        movl_i32r_norm(imm^bv, getTmpReg());
+        xorl_ir(bv, getTmpReg());
+        cmpl_rm(getTmpReg(), offset, base);
+        pop_r(getTmpReg());
+    }
+    
+    void cmpb_im_norm(int imm, int offset, RegisterID base)
+    {
+        spew("cmpb       $0x%x, %s0x%x(%s)",
+             imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
         m_formatter.oneByteOp(OP_GROUP1_EbIb, GROUP1_OP_CMP, base, offset);
         m_formatter.immediate8(imm);
     }
