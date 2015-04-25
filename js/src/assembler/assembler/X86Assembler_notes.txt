@@ -44,6 +44,8 @@ void cmpl_im(int imm, int offset, RegisterID base, RegisterID index, int scale)
 void cmpl_im_force32(int imm, int offset, RegisterID base)
 void cmpq_ir(int imm, RegisterID dst)
 void cmpq_im(int imm, int offset, RegisterID base)
+void cmpq_rm(RegisterID src, int offset, RegisterID base, RegisterID index, int scale)
+void cmpq_im(int imm, int offset, RegisterID base, RegisterID index, int scale)
 
 TODO
 ====    

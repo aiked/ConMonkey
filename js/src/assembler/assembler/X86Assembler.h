@@ -1829,6 +1829,7 @@ public:
     {
         spew("cmpl       %s, %d(%s,%s,%d)",
              nameIReg(4, src), offset, nameIReg(base), nameIReg(index), 1<<scale);
+        m_formatter.prefix(PRE_OPERAND_SIZE);
         m_formatter.oneByteOp(OP_CMP_EvGv, src, base, index, scale, offset);
     }
 
@@ -2037,6 +2038,15 @@ public:
         m_formatter.oneByteOp64(OP_CMP_EvGv, src, base, offset);
     }
 
+    /* michath void cmpq_rm(RegisterID src, int offset, RegisterID base, RegisterID index, int scale) */
+    
+    void cmpq_rm(RegisterID src, int offset, RegisterID base, RegisterID index, int scale)
+    {
+        spew("cmpl       %s, %d(%s,%s,%d)",
+             nameIReg(4, src), offset, nameIReg(base), nameIReg(index), 1<<scale);
+        m_formatter.oneByteOp64(OP_CMP_EvGv, src, base, index, scale, offset);
+    }
+
     void cmpq_mr(int offset, RegisterID base, RegisterID src)
     {
         spew("cmpq       %d(%s), %s",
@@ -2097,7 +2107,7 @@ public:
 	if (isConstantBlind())
 	    cmpq_im_blnd(imm, offset, base);
 	else
-	    cmpq_im_blnd(imm, offset, base);
+	    cmpq_im_norm(imm, offset, base);
     }
     
     void cmpq_im_blnd(int imm, int offset, RegisterID base)
@@ -2128,9 +2138,37 @@ public:
         }
     }
 
+    /* michath void cmpq_im(int imm, int offset, RegisterID base, RegisterID index, int
+       scale) */
     void cmpq_im(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
+	if (isConstantBlind())
+	    cmpq_im_blnd(imm, offset, base, index, scale);
+	else
+	    cmpq_im_norm(imm, offset, base, index, scale);
+    }
+    
+    void cmpq_im_blnd(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
+    
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            cmpq_im_norm(imm, offset, base);
+        } else {
+            bv = blindingValue();
+            push_r(getTmpReg());
+            movq_i32r_norm(imm^bv, getTmpReg());
+            xorq_ir_norm(bv, getTmpReg());
+            cmpq_rm(getTmpReg(), offset, base, index, scale);
+            pop_r(getTmpReg());
+        }
+    }
+
+    void cmpq_im_norm(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
         FIXME_INSN_PRINTING;
+        spew("cmpl       $%d, %d(%s,%s,%d)",
+             imm, offset, nameIReg(base), nameIReg(index), 1<<scale);
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             m_formatter.oneByteOp64(OP_GROUP1_EvIb, GROUP1_OP_CMP, base, index, scale, offset);
             m_formatter.immediate8(imm);
@@ -2193,13 +2231,42 @@ public:
     void cmpw_rm(RegisterID src, int offset, RegisterID base, RegisterID index, int scale)
     {
         FIXME_INSN_PRINTING;
+        spew("cmpw       %s, %d(%s,%s,%d)",
+             nameIReg(4, src), offset, nameIReg(base), nameIReg(index), 1<<scale);
         m_formatter.prefix(PRE_OPERAND_SIZE);
         m_formatter.oneByteOp(OP_CMP_EvGv, src, base, index, scale, offset);
     }
 
+    /* michath void cmpw_im(int imm, int offset, RegisterID base, RegisterID index, int
+       scale) */
     void cmpw_im(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
+	if (isConstantBlind())
+	    cmpw_im_blnd(imm, offset, base, index, scale);
+	else
+	    cmpw_im_norm(imm, offset, base, index, scale);
+    }
+
+    void cmpw_im_blnd(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    { 
+        int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            cmpw_im_norm(imm, offset, base, index, scale);
+        } else {
+            bv = blindingValue();
+            push_r(getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir_norm(bv, getTmpReg());
+            cmpw_rm(getTmpReg(), offset, base, index, scale);
+            pop_r(getTmpReg());
+        }
+    }
+    
+    void cmpw_im_norm(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
         FIXME_INSN_PRINTING;
+        spew("cmpw       $%d, %d(%s,%s,%d)",
+             imm, offset, nameIReg(base), nameIReg(index), 1<<scale);
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             m_formatter.prefix(PRE_OPERAND_SIZE);
             m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_CMP, base, index, scale, offset);
