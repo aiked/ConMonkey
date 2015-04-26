@@ -1500,7 +1500,15 @@ public:
             m_formatter.immediate32(imm);
         }
     }
-
+    
+    /* michath: Custom XOR for imm8. Not really tested */
+    void xorb_i8r(int imm, RegisterID dst)
+    {
+        spew("xorb       $%d, %s", imm, nameIReg(4,dst));
+	m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_XOR, dst);
+	m_formatter.immediate8(imm);
+    }
+    
     /* michath: Custom XOR for imm16. Not really tested */
     void xorw_im16(int imm, int offset, RegisterID base)
     {
@@ -1943,7 +1951,36 @@ public:
         }
     }
     
+
+    
+    /* michath void cmpb_im(int imm, int offset, RegisterID base) */
     void cmpb_im(int imm, int offset, RegisterID base)
+    {
+	if (isConstantBlind())
+	    cmpb_im_blnd(imm, offset, base);
+	else
+	    cmpb_im_norm(imm, offset, base);
+    }
+    
+    void cmpb_rm(RegisterID src, int offset, RegisterID base)
+    {
+        spew("cmpb       %s, %s0x%x(%s)",
+             nameIReg(2, src), PRETTY_PRINT_OFFSET(offset), nameIReg(base));
+	m_formatter.prefix(PRE_OPERAND_SIZE);
+        m_formatter.oneByteOp(OP_CMP_EvGv, src, base, offset);
+    }
+    
+    void cmpb_im_blnd(int imm, int offset, RegisterID base)
+    {
+	int bv = blindingValue8();
+	push_r(getTmpReg());
+	movb_i8r(imm^bv, getTmpReg());
+	xorb_i8r(bv, getTmpReg());
+	cmpb_rm(getTmpReg(), offset, base);
+	pop_r(getTmpReg());
+    }
+    
+    void cmpb_im_norm(int imm, int offset, RegisterID base)
     {
         spew("cmpb       $0x%x, %s0x%x(%s)",
              imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
@@ -2592,6 +2629,13 @@ public:
              imm, nameIReg(4, dst));
         m_formatter.oneByteOp(OP_MOV_EAXIv, dst);
         m_formatter.immediate32(imm);
+    }
+    
+    void movb_i8r(int imm, RegisterID dst)
+    {
+        spew("movl       $0x%x, %s", imm, nameIReg(2, dst));
+        m_formatter.oneByteOp(OP_GROUP11_EvIb, GROUP11_MOV, dst);
+        m_formatter.immediate8(imm);
     }
     
     void movb_i8m(int imm, int offset, RegisterID base)
