@@ -39,6 +39,7 @@
 #include "assembler/assembler/AssemblerBuffer.h"
 #include "assembler/wtf/Assertions.h"
 #include "js/Vector.h"
+#include <vector>
 
 namespace JSC {
 
@@ -454,13 +455,48 @@ public:
 
     RegisterID tmpReg = RegisterID::r15;
 
+    std::vector<unsigned char> ControlFlowInstruction = {
+			    0xc3, // [ret] Return
+			    0xcb, // [Far return] Far return
+			    0xcc, // [int3] Interrupt Type 3
+			    0xcf, // [iret] Interrupt Return
+			    0xc9, // [leave]
+			// Types of conditional jmp
+			    0x73, 0x77, 0x72, 0x76, 0xe3, 0x74, 0x7f,
+			    0x7d, 0x7c, 0x7e, 0x71, 0x7b, 0x70, 0x7a,
+			    0x75, 0x79, 0x0f, 0x82, 0x84, 0x8f, 0x8d,
+			    0x8c, 0x83, 0x8e, 0x87, 0x80, 0x81, 0x85,
+			    0x88,
+			// Type of un-conditional jmp
+			    0xeb, 0xe9, 0xff, 0xea };
+
+    int bv = blindingValue();
+
     void setConstantBlind(bool _in){ constant_blind = _in; }
-    bool isConstantBlind(){ return constant_blind; }
     RegisterID getTmpReg(){ return tmpReg; }
+
+    bool isConstantBlind(int imm){
+	if ( imm > 0xffff )
+	    return constant_blind; 
+	return false;
+    } 
+    /* bool isConstantBlind(int imm) { 
+	for (unsigned char toCheck : ControlFlowInstruction) {
+	    if (reinterpret_cast<unsigned char *>(&imm)[0] == toCheck ||
+		reinterpret_cast<unsigned char *>(&imm)[1] == toCheck ||
+		reinterpret_cast<unsigned char *>(&imm)[2] == toCheck ||
+		reinterpret_cast<unsigned char *>(&imm)[3] == toCheck )
+	    {
+		return true;
+	    }
+	}
+	return false;
+    } */
+    
 
     int ConstantBlindRand8()
     {
-        return 0xd;
+        return 0x7d;
     }
 
     int ConstantBlindRand()
@@ -596,7 +632,7 @@ public:
     /* michath void addl_ir(int imm, RegisterID dst) */
     void addl_ir(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             addl_ir_blnd(imm, dst);
         else
             addl_ir_norm(imm, dst);    
@@ -631,7 +667,7 @@ public:
     /* michath void addl_im(int imm, int offset, RegisterID base) */
     void addl_im(int imm, int offset, RegisterID base)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             addl_im_blnd(imm, offset, base);
         else
             addl_im_norm(imm, offset, base);
@@ -690,7 +726,7 @@ public:
     /* michath void addq_ir(int imm, RegisterID dst) */
     void addq_ir(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             addq_ir_blnd(imm, dst);
         else 
             addq_ir_norm(imm, dst);
@@ -726,7 +762,7 @@ public:
     /* michath void addq_im(int imm, int offset, RegisterID base) */
     void addq_im(int imm, int offset, RegisterID base)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             addq_im_blnd(imm, offset, base);
         else
             addq_im_norm(imm, offset, base);
@@ -763,7 +799,7 @@ public:
     /* michath void addq_im(int imm, const void* addr) */
     void addq_im(int imm, const void* addr)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             addq_im_blnd(imm, addr);
         else
             addq_im_norm(imm, addr);
@@ -799,7 +835,7 @@ public:
     /* michath void addl_im(int imm, const void* addr) */
     void addl_im(int imm, const void* addr)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             addl_im_blnd(imm, addr);
         else
             addl_im_norm(imm, addr);
@@ -873,7 +909,7 @@ public:
     /* michath void andl_ir(int imm, RegisterID dst) */
     void andl_ir(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             andl_ir_blnd(imm, dst);
         else
             andl_ir_norm(imm, dst);
@@ -913,7 +949,7 @@ public:
     /* michath void andl_im(int imm, int offset, RegisterID base) */
     void andl_im(int imm, int offset, RegisterID base)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             andl_im_blnd(imm, offset, base);
         else    
             andl_im_norm(imm, offset, base);
@@ -984,7 +1020,7 @@ public:
     /* michath void andq_ir(int imm, RegisterID dst) */
     void andq_ir(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             andq_ir_blnd(imm, dst);
         else
             andq_ir_norm(imm, dst);
@@ -1103,7 +1139,7 @@ public:
     /* michath void orl_ir(int imm, RegisterID dst) */
     void orl_ir(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             orl_ir_blnd(imm, dst);
         else
             orl_ir_norm(imm, dst);
@@ -1144,7 +1180,7 @@ public:
     /* michath void orl_im(int imm, int offset, RegisterID base) */
     void orl_im(int imm, int offset, RegisterID base)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             orl_im_blnd(imm, offset, base);
         else
             orl_im_norm(imm, offset, base);
@@ -1201,7 +1237,7 @@ public:
     /* michath void orq_ir(int imm, RegisterID dst) */
     void orq_ir(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             orq_ir_blnd(imm, dst);
         else
             orq_ir_norm(imm, dst);
@@ -1275,7 +1311,7 @@ public:
     /* michath void subl_ir(int imm, RegisterID dst) */
     void subl_ir(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             subl_ir_blnd(imm, dst);
         else
             subl_ir_norm(imm, dst);
@@ -1309,7 +1345,7 @@ public:
     /* michath void subl_im(int imm, int offset, RegisterID base) */
     void subl_im(int imm, int offset, RegisterID base)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             subl_im_blnd(imm, offset, base);
         else
             subl_im_norm(imm, offset, base);
@@ -1373,7 +1409,7 @@ public:
     /* michath void subq_ir(int imm, RegisterID dst) */
     void subq_ir(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             subq_ir_blnd(imm, dst);
         else
             subq_ir_norm(imm, dst);
@@ -1408,7 +1444,7 @@ public:
     /* michath void subl_im(int imm, const void* addr) */
     void subl_im(int imm, const void* addr)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             subl_im_blnd(imm, addr);
         else
             subl_im_norm(imm, addr);
@@ -1466,7 +1502,7 @@ public:
     /* michath void xorl_im(int imm, int offset, RegisterID base) */
     void xorl_im(int imm, int offset, RegisterID base)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             xorl_im_blnd(imm, offset, base);
         else
             xorl_im_norm(imm, offset, base);
@@ -1541,7 +1577,7 @@ public:
     /* michath void xorl_ir(int imm, RegisterID dst) */
     void xorl_ir(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             xorl_ir_blnd(imm, dst);
         else
             xorl_ir_norm(imm, dst);
@@ -1585,7 +1621,7 @@ public:
     /* michath void xorq_ir(int imm, RegisterID dst) */
     void xorq_ir(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             xorq_ir_blnd(imm, dst);
         else
             xorq_ir_norm(imm, dst);
@@ -1866,7 +1902,7 @@ public:
             return;
         }
         
-	if (isConstantBlind())
+	if (isConstantBlind(imm))
             cmpl_ir_blnd(imm, dst);
         else
             cmpl_ir_norm(imm, dst);
@@ -1907,7 +1943,7 @@ public:
     /* michath void cmpl_ir_force32(int imm, RegisterID dst) */
     void cmpl_ir_force32(int imm, RegisterID dst)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             cmpl_ir_force32_blnd(imm, dst);
         else
             cmpl_ir_force32_norm(imm, dst);
@@ -1933,7 +1969,7 @@ public:
     /* michath void cmpl_im(int imm, int offset, RegisterID base) */
     void cmpl_im(int imm, int offset, RegisterID base)
     {
-        if (isConstantBlind())
+        if (isConstantBlind(imm))
             cmpl_im_blnd(imm, offset, base);
         else
             cmpl_im_norm(imm, offset, base);
@@ -1970,7 +2006,7 @@ public:
     /* michath void cmpb_im(int imm, int offset, RegisterID base) */
     void cmpb_im(int imm, int offset, RegisterID base)
     {
-	if (isConstantBlind())
+	if (isConstantBlind(imm))
 	    cmpb_im_blnd(imm, offset, base);
 	else
 	    cmpb_im_norm(imm, offset, base);
@@ -2007,7 +2043,7 @@ public:
     /* michath void cmpl_im(int imm, int offset, RegisterID base, RegisterID index, int scale) */
     void cmpl_im(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
-	if (isConstantBlind())
+	if (isConstantBlind(imm))
 	    cmpl_im_blnd(imm, offset, base, index, scale);
 	else
 	    cmpl_im_norm(imm, offset, base, index, scale);
@@ -2018,11 +2054,10 @@ public:
         int bv;
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             /* cmpl_im_norm(imm, offset, base, index, scale); */
-	    /* FIX ME */
-	    /* bv = blindingValue8(); */
+	    bv = blindingValue8();
 	    push_r(getTmpReg());
-	    movb_i8r(imm, getTmpReg());
-	    /* xorb_i8r(bv, getTmpReg()); */
+	    movb_i8r(imm^bv, getTmpReg());
+	    xorb_i8r(bv, getTmpReg());
 	    cmpb_rm(getTmpReg(), offset, base, index, scale);
 	    pop_r(getTmpReg());
         } else {
@@ -2051,7 +2086,7 @@ public:
     /* michath void cmpl_im_force32(int imm, int offset, RegisterID base) */
     void cmpl_im_force32(int imm, int offset, RegisterID base)
     {
-	if (isConstantBlind())
+	if (isConstantBlind(imm))
 	    cmpl_im_force32_blnd(imm, offset, base);
 	else    
 	    cmpl_im_force32_norm(imm, offset, base);
@@ -2114,7 +2149,7 @@ public:
             return;
         }
 
-	if (isConstantBlind())
+	if (isConstantBlind(imm))
 	    cmpq_ir_blnd(imm, dst);
 	else
 	    cmpq_ir_norm(imm, dst);
@@ -2156,7 +2191,7 @@ public:
     /* michath void cmpq_im(int imm, int offset, RegisterID base) */
     void cmpq_im(int imm, int offset, RegisterID base)
     {
-	if (isConstantBlind())
+	if (isConstantBlind(imm))
 	    cmpq_im_blnd(imm, offset, base);
 	else
 	    cmpq_im_norm(imm, offset, base);
@@ -2194,7 +2229,7 @@ public:
        scale) */
     void cmpq_im(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
-	if (isConstantBlind())
+	if (isConstantBlind(imm))
 	    cmpq_im_blnd(imm, offset, base, index, scale);
 	else
 	    cmpq_im_norm(imm, offset, base, index, scale);
@@ -2293,7 +2328,7 @@ public:
        scale) */
     void cmpw_im(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
-	if (isConstantBlind())
+	if (isConstantBlind(imm))
 	    cmpw_im_blnd(imm, offset, base, index, scale);
 	else
 	    cmpw_im_norm(imm, offset, base, index, scale);
@@ -2337,6 +2372,14 @@ public:
         m_formatter.oneByteOp(OP_TEST_EvGv, src, dst);
     }
 
+    /* michath void testl_rm(RegisterID src, int offset, RegisterID base) */
+    void testl_rm(RegisterID src, int offset, RegisterID base)
+    {
+        spew("testl       %s, %s0x%x(%s)",
+             nameIReg(4, src), PRETTY_PRINT_OFFSET(offset), nameIReg(4, base));
+        m_formatter.oneByteOp(OP_TEST_EvGv, src, base, offset);
+    }
+    
     void testb_rr(RegisterID src, RegisterID dst)
     {
         spew("testb      %s, %s",
@@ -2344,6 +2387,7 @@ public:
         m_formatter.oneByteOp(OP_TEST_EbGb, src, dst);
     }
 
+    /* michath void testl_i32r(int imm, RegisterID dst) */
     void testl_i32r(int imm, RegisterID dst)
     {
         // If the mask fits in an 8-bit immediate, we can use testb with an
@@ -2358,15 +2402,62 @@ public:
             testb_i8r_norex(imm >> 8, X86Registers::getSubregH(dst));
             return;
         }
+	
+	if (isConstantBlind(imm))
+	    testl_i32r_blnd(imm, dst);
+	else
+	    testl_i32r_norm(imm, dst);
+    }
+
+    void testl_i32r_blnd(int imm, RegisterID dst)
+    {
+	int bv = blindingValue();
+	push_r(getTmpReg());
+	movl_i32r_norm(imm^bv, getTmpReg());
+	xorl_ir(bv, getTmpReg());
+	testl_rr(getTmpReg(),  dst);
+	pop_r(getTmpReg());
+    }
+    
+    void testl_i32r_norm(int imm, RegisterID dst)
+    {
         spew("testl      $0x%x, %s",
              imm, nameIReg(dst));
         m_formatter.oneByteOp(OP_GROUP3_EvIz, GROUP3_OP_TEST, dst);
         m_formatter.immediate32(imm);
     }
 
+    /* michath void testl_i32m(int imm, int offset, RegisterID base) */
     void testl_i32m(int imm, int offset, RegisterID base)
     {
-        spew("testl      $0x%x, %s0x%x(%s)",
+	if (isConstantBlind(imm))
+	    testl_i32m_norm(imm, offset, base);
+	else
+	    testl_i32m_norm(imm, offset, base);
+    }
+    
+    void testl_i32m_blnd(int imm, int offset, RegisterID base)
+    {
+	if (base == RegisterID::ebp)
+	{	
+	    spew("testlrm2      $0x%x, %s0x%x(%s)",
+	       imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
+	    m_formatter.oneByteOp(OP_GROUP3_EvIz, GROUP3_OP_TEST, base, offset);
+	    m_formatter.immediate32(imm);
+	}
+
+	int bv = blindingValue();
+	push_r(getTmpReg());
+	movl_i32r_norm(imm^bv, getTmpReg());
+	xorl_ir_norm(bv, getTmpReg());
+	addl_ir_norm(offset, base);
+	testl_rm(getTmpReg(), offset, base);
+	pop_r(getTmpReg());
+    }
+    
+    void testl_i32m_norm(int imm, int offset, RegisterID base)
+    {
+        spew("testlrm      $0x%x, %s0x%x(%s)",
              imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
         m_formatter.oneByteOp(OP_GROUP3_EvIz, GROUP3_OP_TEST, base, offset);
         m_formatter.immediate32(imm);
@@ -2625,7 +2716,7 @@ public:
     /* michath void movl_i32r(int imm, RegisterID dst) */
     void movl_i32r(int imm, RegisterID dst)
     {
-    	if (isConstantBlind())
+    	if (isConstantBlind(imm))
     	    movl_i32r_blnd(imm, dst);
 	else
 	    movl_i32r_norm(imm, dst);
@@ -2672,7 +2763,7 @@ public:
     /* michath movw_i16m(int imm, int offset, RegisterID base) */
     void movw_i16m(int imm, int offset, RegisterID base)
     {
-    	if (isConstantBlind())
+    	if (isConstantBlind(imm))
     		movw_i16m_blnd( imm, offset, base);
     	else
     		movw_i16m_norm( imm, offset, base);
@@ -2697,7 +2788,7 @@ public:
     /* michath void movl_i32m(int imm, int offset, RegisterID base) */
     void movl_i32m(int imm, int offset, RegisterID base)
     {
-    	if (isConstantBlind())
+    	if (isConstantBlind(imm))
     		movl_i32m_blnd(imm, offset, base);
     	else
     		movl_i32m_norm(imm, offset, base);
@@ -2721,7 +2812,7 @@ public:
     /* michath void movw_i16m(int imm, int offset, RegisterID base, RegisterID index, int scale) */
     void movw_i16m(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
-    	if (isConstantBlind())
+    	if (isConstantBlind(imm))
     		movw_i16m_blnd(imm, offset, base, index, scale);
     	else
     		movw_i16m_norm(imm, offset, base, index, scale);
@@ -2746,7 +2837,7 @@ public:
     /* michath void movl_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale) */
     void movl_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
-    	if (isConstantBlind())
+    	if (isConstantBlind(imm))
     		movl_i32m_blnd(imm, offset, base, index, scale);
     	else
     		movl_i32m_norm(imm, offset, base, index, scale);
@@ -2874,7 +2965,7 @@ public:
     /* michath void movq_i32m(int imm, int offset, RegisterID base) */
     void movq_i32m(int imm, int offset, RegisterID base)
     {
-    	if(isConstantBlind())
+    	if(isConstantBlind(imm))
     		movq_i32m_blnd(imm, offset, base);
     	else
     		movq_i32m_norm(imm, offset, base);
@@ -2898,7 +2989,7 @@ public:
     /* michath void movq_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale) */
     void movq_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
-    	if (isConstantBlind())
+    	if (isConstantBlind(imm))
     		movq_i32m_blnd(imm, offset, base, index, scale);
     	else
     		movq_i32m_norm(imm, offset, base, index, scale);
@@ -2936,7 +3027,7 @@ public:
     /* michath movq_i32r(int imm, Register dst) */
     void movq_i32r(int imm, RegisterID dst)
     {
-        if(isConstantBlind())
+        if(isConstantBlind(imm))
             movq_i32r_blnd(imm, dst);
         else
             movq_i32r_norm(imm, dst);
@@ -2959,7 +3050,7 @@ public:
     /* movq_i64r(int64_t imm, RegisterID dst) */
     void movq_i64r(int64_t imm, RegisterID dst)
     {
-        if(isConstantBlind())
+        if(isConstantBlind(imm))
             movq_i64r_blnd(imm, dst);
         else
             movq_i64r_norm(imm, dst);
