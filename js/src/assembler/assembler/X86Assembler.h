@@ -448,13 +448,17 @@ public:
     bool oom() const { return m_formatter.oom(); }
 
     /* michath */
+    enum class ConstantSafety: char { None, Byte2,  Conditional, Full };
+    ConstantSafety cb_status = ConstantSafety::Full;
     bool constant_blind = true;
     int  blind_value = 0;
     int  blind_value8 = 0;
     int64_t blind_value64 = 0;
 
+    /* Temporaty Register */
     RegisterID tmpReg = RegisterID::r15;
-
+    RegisterID getTmpReg(){ return tmpReg; }
+    
     std::vector<unsigned char> ControlFlowInstruction = {
 			    0xc3, // [ret] Return
 			    0xcb, // [Far return] Far return
@@ -469,17 +473,14 @@ public:
 			    0x88,
 			// Type of un-conditional jmp
 			    0xeb, 0xe9, 0xff, 0xea };
-
-    int bv = blindingValue();
-
-    void setConstantBlind(bool _in){ constant_blind = _in; }
-    RegisterID getTmpReg(){ return tmpReg; }
-
-    bool isConstantBlind(int imm){
-	if ( imm > 0xffff )
-	    return constant_blind; 
-	return false;
-    } 
+    
+    /* Constant blinding version None
+    bool is ConstantBlind(int imm) { return false; } */
+    /* Constant blinding version Full */
+    bool isConstantBlind(int imm) { return true; }
+    /* Constant blinding version Byte2 
+    bool is ConstantBlind(int imm) { return (imm>0xffff)?(true):(false) } */
+    /* Constant blinding version Conditional */
     /* bool isConstantBlind(int imm) { 
 	for (unsigned char toCheck : ControlFlowInstruction) {
 	    if (reinterpret_cast<unsigned char *>(&imm)[0] == toCheck ||
@@ -559,9 +560,25 @@ public:
         m_formatter.oneByteOp(OP_POP_EAX, reg);
     }
 
+    /* michath void push_i32(int imm) */
     void push_i32(int imm)
     {
-        spew("push       %s$0x%x",
+	if (isConstantBlind(imm))
+	    push_i32_blnd(imm);
+	else
+	    push_i32_norm(imm);
+    }
+
+    void push_i32_blnd(int imm)
+    {
+	int bv = blindingValue();
+	push_i32_norm(imm ^ bv);
+	xorl_im_norm(bv, 0x0, RegisterID::esp);
+    }
+    
+    void push_i32_norm(int imm)
+    {
+        spew("pushi      %s$0x%x",
              PRETTY_PRINT_OFFSET(imm));
         m_formatter.oneByteOp(OP_PUSH_Iz);
         m_formatter.immediate32(imm);
@@ -1599,7 +1616,7 @@ public:
 
     void xorl_ir_norm(int imm, RegisterID dst)
     {
-        spew("xorl       $%d, %s",
+        spew("xorl       $0x%x, %s",
              imm, nameIReg(4,dst));
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_XOR, dst);

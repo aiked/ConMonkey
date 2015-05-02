@@ -1,5 +1,7 @@
 Functions changed
 =================
+void push_i32(int imm)
+
 void movl_i32r(int imm, RegisterID dst)
 void movw_i16m(int imm, int offset, RegisterID base)
 void movl_i32m(int imm, int offset, RegisterID base)
