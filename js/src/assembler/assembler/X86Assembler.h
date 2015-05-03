@@ -569,17 +569,15 @@ public:
 	    push_i32_norm(imm);
     }
 
+    /* TODO this seg faults */
     void push_i32_blnd(int imm)
     {
-	int bv = blindingValue();
-	push_i32_norm(imm ^ bv);
-	xorl_im_norm(bv, 0x0, RegisterID::esp);
+	push_i32_norm(imm);
     }
     
     void push_i32_norm(int imm)
     {
-        spew("pushi      %s$0x%x",
-             PRETTY_PRINT_OFFSET(imm));
+        spew("pushi      $0x%x",imm);
         m_formatter.oneByteOp(OP_PUSH_Iz);
         m_formatter.immediate32(imm);
     }
@@ -740,6 +738,8 @@ public:
              addr, nameIReg(8, dst));
         m_formatter.oneByteOp64(OP_ADD_GvEv, dst, addr);
     }
+    
+    
     /* michath void addq_ir(int imm, RegisterID dst) */
     void addq_ir(int imm, RegisterID dst)
     {
@@ -1051,7 +1051,8 @@ public:
         } else {
             bv = blindingValue();
             push_r(getTmpReg());
-            movq_i32r(imm^bv, getTmpReg());
+            movq_i32r_norm(imm^bv, getTmpReg());
+	    xorq_ir_norm(bv, getTmpReg());
             andq_rr(getTmpReg(), dst);
             pop_r(getTmpReg()); 
         }
@@ -1294,7 +1295,7 @@ public:
 #else
     void orl_im(int imm, const void* addr)
     {
-        FIXME_INSN_PRINTING;
+        spew("orl       $0x%x, %p", imm, addr);
         if (CAN_SIGN_EXTEND_8_32(imm)) {
             m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_OR, addr);
             m_formatter.immediate8(imm);
@@ -2070,7 +2071,6 @@ public:
     {
         int bv;
         if (CAN_SIGN_EXTEND_8_32(imm)) {
-            /* cmpl_im_norm(imm, offset, base, index, scale); */
 	    bv = blindingValue8();
 	    push_r(getTmpReg());
 	    movb_i8r(imm^bv, getTmpReg());
@@ -2312,7 +2312,37 @@ public:
         m_formatter.oneByteOp_disp32(OP_CMP_EvGv, reg, addr);
     }
 
+    
+    /* michath void cmpl_im(int imm, const void* addr) */
     void cmpl_im(int imm, const void* addr)
+    {
+	if (isConstantBlind(imm))
+	    cmpl_im_blnd(imm, addr);
+	else
+	    cmpl_im_norm(imm, addr);
+    }
+
+    void cmpl_im_blnd(int imm, const void* addr)
+    {
+	int bv;
+        if (CAN_SIGN_EXTEND_8_32(imm)) {
+            bv = blindingValue8();
+            push_r(getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir_norm(bv, getTmpReg());
+            cmpl_rm(getTmpReg(), addr);
+            pop_r(getTmpReg());
+	} else {
+            bv = blindingValue();
+            push_r(getTmpReg());
+            movl_i32r_norm(imm^bv, getTmpReg());
+            xorl_ir_norm(bv, getTmpReg());
+            cmpl_rm(getTmpReg(), addr);
+            pop_r(getTmpReg());
+	}
+    }
+    
+    void cmpl_im_norm(int imm, const void* addr)
     {
         spew("cmpl       $0x%x, %p", imm, addr);
         if (CAN_SIGN_EXTEND_8_32(imm)) {
@@ -3027,7 +3057,24 @@ public:
         m_formatter.immediate32(imm);
     }
 
+ 
+    /* michath void movq_i32m(int imm, const void* addr) */
     void movq_i32m(int imm, const void* addr)
+    {
+	if (isConstantBlind(imm))
+	    movq_i32m_blnd(imm, addr);
+	else
+	    movq_i32m_norm(imm, addr);
+    }
+
+    void movq_i32m_blnd(int imm, const void* addr)
+    {
+	int bv = blindingValue();
+	movq_i32m_norm(imm-bv, addr);
+	addq_im_norm(bv, addr);
+    }
+    
+    void movq_i32m_norm(int imm, const void* addr)
     {
         spew("movq       %d, %p", imm, addr);
         m_formatter.oneByteOp64(OP_GROUP11_EvIz, GROUP11_MOV, addr);
@@ -3076,9 +3123,7 @@ public:
     /* TODO xorq is not working, we have to find another way */
     void movq_i64r_blnd(int64_t imm, RegisterID dst)
     {
-        /* int64_t bv = blindingValue64(); */ 
         movq_i64r_norm(imm, dst);
-        /* xorq_i64r( imm, dst); */
     }
 
     void movq_i64r_norm(int64_t imm, RegisterID dst)
