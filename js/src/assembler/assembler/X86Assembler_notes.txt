@@ -1,5 +1,5 @@
-Functions changed
-=================
+Immediate altered with math operation
+=====================================
 void movl_i32r(int imm, RegisterID dst)
 void movw_i16m(int imm, int offset, RegisterID base)
 void movl_i32m(int imm, int offset, RegisterID base)
@@ -8,6 +8,8 @@ void movl_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale
 void movq_i32m(int imm, int offset, RegisterID base)
 void movq_i32m(int imm, int offset, RegisterID base, RegisterID index, int scale)
 void movb_i8r(int imm, RegisterID dst)
+void movb_i8m(int imm, int offset, RegisterID base)
+void movb_i8m(int imm, int offset, RegisterID base, RegisterID index, int scale)
 void movq_i32m(int imm, const void* addr)
 
 void xorl_ir32(int imm, RegisterID dst)
@@ -27,8 +29,8 @@ void subl_im(int imm, int offset, RegisterID base)
 void subq_ir(int imm, RegisterID dst)
 void subl_im(int imm, const void* addr)
 
-WITH_TEMP_REGISTER
-==================
+Using a temp register
+=====================
 void andl_ir(int imm, RegisterID dst)
 void andl_im(int imm, int offset, RegisterID base)
 void andq_ir(int imm, RegisterID dst)
@@ -54,8 +56,11 @@ void cmpl_im(int imm, const void* addr)
 void testl_i32r(int imm, RegisterID dst)
 void testl_i32m(int imm, int offset, RegisterID base)
 
+Altered for offset checking
+===========================
+void movw_rm(RegisterID src, int offset, RegisterID base)
 
-NOT NEED TO CHANGE ( its in the else branch of WTF_X64 )
+No need to alter them( its in the else branch of WTF_X64 )
 ==================
 void andl_im(int imm, const void* addr)
 void orl_im(int imm, const void* addr)

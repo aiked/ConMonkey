@@ -1563,6 +1563,24 @@ public:
 	m_formatter.immediate8(imm);
     }
     
+    /* michath: Custom XOR for imm8. Not really tested */
+    void xorb_i8m(int imm, int offset, RegisterID base)
+    {
+	spew("xorb       $0x%x, %s0x%x(%s)",
+		 imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
+	m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_XOR, base, offset);
+	m_formatter.immediate8(imm);
+    }
+
+    /* michath: Custom XOR for imm8. Not really tested */
+    void xorb_i8m(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
+    	spew("xorb       $0x%x, %d(%s,%s,%d)",
+			   imm, offset, nameIReg(base), nameIReg(index), 1<<scale);
+	m_formatter.oneByteOp(OP_GROUP1_EvIb, GROUP1_OP_XOR, base, index, scale, offset);
+	m_formatter.immediate8(imm);
+    }
+    
     /* michath: Custom XOR for imm16. Not really tested */
     void xorw_im16(int imm, int offset, RegisterID base)
     {
@@ -2652,7 +2670,23 @@ public:
         m_formatter.oneByteOp(OP_MOV_EvGv, src, dst);
     }
 
+    /* michath void movw_rm(RegisterID src, int offset, RegisterID base) */
     void movw_rm(RegisterID src, int offset, RegisterID base)
+    {
+	if (isConstantBlind(offset))
+	    movw_rm_blnd(src, offset, base);
+	else
+	    movw_rm_norm(src, offset, base);
+    }
+
+    void movw_rm_blnd(RegisterID src, int offset, RegisterID base)
+    {
+	addl_ir(offset, base);
+	movw_rm_norm(src, 0x0, base);
+	subl_ir(offset, base);
+    }
+    
+    void movw_rm_norm(RegisterID src, int offset, RegisterID base)
     {
         spew("movw       %s, %s0x%x(%s)",
              nameIReg(2,src), PRETTY_PRINT_OFFSET(offset), nameIReg(base));
@@ -2783,15 +2817,47 @@ public:
         m_formatter.oneByteOp(OP_MOV_EAXIv, dst);
         m_formatter.immediate32(imm);
     }
-    
+
+    /* michath void movb_i8r(int imm, RegisterID dst) */
     void movb_i8r(int imm, RegisterID dst)
     {
-        spew("movl       $0x%x, %s", imm, nameIReg(2, dst));
+	if (isConstantBlind(imm))
+	    movb_i8r_blnd(imm, dst);
+	else
+	    movb_i8r_norm(imm, dst);
+    }
+
+    void movb_i8r_blnd(int imm, RegisterID dst)
+    {
+	int bv = blindingValue8();
+	movb_i8r_norm(imm^bv, dst);
+	xorb_i8r(bv, dst);
+    }
+    
+    void movb_i8r_norm(int imm, RegisterID dst)
+    {
+        spew("movb       $0x%x, %s", imm, nameIReg(2, dst));
         m_formatter.oneByteOp(OP_GROUP11_EvIb, GROUP11_MOV, dst);
         m_formatter.immediate8(imm);
     }
     
+    /* michath void movb_i8m(int imm, int offset, RegisterID base) */
     void movb_i8m(int imm, int offset, RegisterID base)
+    {
+	if (isConstantBlind(imm))
+	    movb_i8m_blnd(imm, offset, base);
+	else
+	    movb_i8m_norm(imm, offset, base);
+    }
+
+    void movb_i8m_blnd(int imm, int offset, RegisterID base)
+    {
+	int bv = blindingValue8();
+	movb_i8m_norm(imm^bv, offset, base);
+	xorb_i8m(bv, offset, base);
+    }
+    
+    void movb_i8m_norm(int imm, int offset, RegisterID base)
     {
         spew("movb       $0x%x, %s0x%x(%s)",
              imm, PRETTY_PRINT_OFFSET(offset), nameIReg(base));
@@ -2799,7 +2865,24 @@ public:
         m_formatter.immediate8(imm);
     }
 
+    /* michath void movb_i8m(int imm, int offset, RegisterID base, RegisterID index, int
+       scale) */
     void movb_i8m(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
+	if (isConstantBlind(imm))
+	    movb_i8m_blnd(imm, offset, base, index, scale);
+	else
+	    movb_i8m_norm(imm, offset, base, index, scale);
+    }
+    
+    void movb_i8m_blnd(int imm, int offset, RegisterID base, RegisterID index, int scale)
+    {
+	int bv = blindingValue8();
+	movb_i8m_norm(imm^bv, offset, base, index, scale);
+	xorb_i8m(bv, offset, base, index, scale);
+    }
+    
+    void movb_i8m_norm(int imm, int offset, RegisterID base, RegisterID index, int scale)
     {
         spew("movb       $0x%x, %d(%s,%s,%d)",
              imm, offset, nameIReg(base), nameIReg(index), 1<<scale);
