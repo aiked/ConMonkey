@@ -478,8 +478,8 @@ public:
     bool is ConstantBlind(int imm) { return false; } */
     /* Constant blinding version Full */
     bool isConstantBlind(int imm) { return true; }
-    /* Constant blinding version Byte2 
-    bool is ConstantBlind(int imm) { return (imm>0xffff)?(true):(false) } */
+    /* Constant blinding version Byte2 */
+    /* bool isConstantBlind(int imm) { return (imm>0xffff)?(true):(false); } */
     /* Constant blinding version Conditional */
     /* bool isConstantBlind(int imm) { 
 	for (unsigned char toCheck : ControlFlowInstruction) {
@@ -560,24 +560,9 @@ public:
         m_formatter.oneByteOp(OP_POP_EAX, reg);
     }
 
-    /* michath void push_i32(int imm) */
     void push_i32(int imm)
     {
-	if (isConstantBlind(imm))
-	    push_i32_blnd(imm);
-	else
-	    push_i32_norm(imm);
-    }
-
-    /* TODO this seg faults */
-    void push_i32_blnd(int imm)
-    {
-	push_i32_norm(imm);
-    }
-    
-    void push_i32_norm(int imm)
-    {
-        spew("pushi      $0x%x",imm);
+        spew("push      $0x%x",imm);
         m_formatter.oneByteOp(OP_PUSH_Iz);
         m_formatter.immediate32(imm);
     }
