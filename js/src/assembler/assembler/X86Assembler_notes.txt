@@ -59,6 +59,7 @@ void testl_i32m(int imm, int offset, RegisterID base)
 Altered for offset checking
 ===========================
 void movw_rm(RegisterID src, int offset, RegisterID base)
+void movw_rm_disp32(RegisterID src, int offset, RegisterID base)
 
 No need to alter them( its in the else branch of WTF_X64 )
 ==================

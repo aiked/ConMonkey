@@ -2681,7 +2681,7 @@ public:
 
     void movw_rm_blnd(RegisterID src, int offset, RegisterID base)
     {
-	addl_ir(offset, base);
+	addl_ir(offset,	base);
 	movw_rm_norm(src, 0x0, base);
 	subl_ir(offset, base);
     }
@@ -2693,8 +2693,23 @@ public:
         m_formatter.prefix(PRE_OPERAND_SIZE);
         m_formatter.oneByteOp(OP_MOV_EvGv, src, base, offset);
     }
-
+    /* michath void movw_rm_disp32(RegisterID src, int offset, RegisterID base) */
     void movw_rm_disp32(RegisterID src, int offset, RegisterID base)
+    {
+	if(isConstantBlind(offset))
+	    movw_rm_disp32_blnd(src, offset, base);
+	else
+	    movw_rm_disp32_norm(src, offset, base);
+    }
+    
+    void movw_rm_disp32_blnd(RegisterID src, int offset, RegisterID base)
+    {
+	addl_ir(offset,	base);
+	movw_rm_norm(src, 0x0, base);
+	subl_ir(offset, base);
+    }
+    
+    void movw_rm_disp32_norm(RegisterID src, int offset, RegisterID base)
     {
         spew("movw       %s, %s0x%x(%s)",
              nameIReg(2,src), PRETTY_PRINT_OFFSET(offset), nameIReg(base));
@@ -2752,6 +2767,7 @@ public:
 #endif
     }
 
+    
     void movl_mr(int offset, RegisterID base, RegisterID dst)
     {
         spew("movl       %s0x%x(%s), %s",
