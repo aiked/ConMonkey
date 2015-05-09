@@ -459,40 +459,44 @@ public:
     RegisterID tmpReg = RegisterID::r15;
     RegisterID getTmpReg(){ return tmpReg; }
     
-    std::vector<unsigned char> ControlFlowInstruction = {
-			    0xc3, // [ret] Return
-			    0xcb, // [Far return] Far return
-			    0xcc, // [int3] Interrupt Type 3
-			    0xcf, // [iret] Interrupt Return
-			    0xc9, // [leave]
-			// Types of conditional jmp
-			    0x73, 0x77, 0x72, 0x76, 0xe3, 0x74, 0x7f,
-			    0x7d, 0x7c, 0x7e, 0x71, 0x7b, 0x70, 0x7a,
-			    0x75, 0x79, 0x0f, 0x82, 0x84, 0x8f, 0x8d,
-			    0x8c, 0x83, 0x8e, 0x87, 0x80, 0x81, 0x85,
-			    0x88,
-			// Type of un-conditional jmp
-			    0xeb, 0xe9, 0xff, 0xea };
-    
+    int i;
+    unsigned char check;
+    unsigned char CFopcodes[38] = {
+             0xc3, // [ret] Return
+             0xcb, // [Far return] Far return
+             0xcc, // [int3] Interrupt Type 3
+             0xcf, // [iret] Interrupt Return
+             0xc9, // [leave]
+         // Types of conditional jmp
+             0x73, 0x77, 0x72, 0x76, 0xe3, 0x74, 0x7f,
+             0x7d, 0x7c, 0x7e, 0x71, 0x7b, 0x70, 0x7a,
+             0x75, 0x79, 0x0f, 0x82, 0x84, 0x8f, 0x8d,
+             0x8c, 0x83, 0x8e, 0x87, 0x80, 0x81, 0x85,
+             0x88,
+         // Type of un-conditional jmp
+             0xeb, 0xe9, 0xff, 0xea };
+        
     /* Constant blinding version None
     bool is ConstantBlind(int imm) { return false; } */
-    /* Constant blinding version Full */
-    bool isConstantBlind(int imm) { return true; }
-    /* Constant blinding version Byte2 
-    bool is ConstantBlind(int imm) { return (imm>0xffff)?(true):(false) } */
+    /* Constant blinding version Full 
+    bool isConstantBlind(int imm) { return true; } */
+    /* Constant blinding version Byte2 */
+    /* bool isConstantBlind(int imm) { return (imm>0xffff)?(true):(false); } */
     /* Constant blinding version Conditional */
-    /* bool isConstantBlind(int imm) { 
-	for (unsigned char toCheck : ControlFlowInstruction) {
-	    if (reinterpret_cast<unsigned char *>(&imm)[0] == toCheck ||
-		reinterpret_cast<unsigned char *>(&imm)[1] == toCheck ||
-		reinterpret_cast<unsigned char *>(&imm)[2] == toCheck ||
-		reinterpret_cast<unsigned char *>(&imm)[3] == toCheck )
-	    {
-		return true;
-	    }
-	}
+    bool isConstantBlind(int imm) {
+        if(imm>0x69){
+            for (i=0; i<38; ++i) {
+                if (reinterpret_cast<unsigned char *>(&imm)[0] == CFopcodes[i] ||
+                    reinterpret_cast<unsigned char *>(&imm)[1] == CFopcodes[i] ||
+                    reinterpret_cast<unsigned char *>(&imm)[2] == CFopcodes[i] ||
+                    reinterpret_cast<unsigned char *>(&imm)[3] == CFopcodes[i] )
+                {
+                    return true;
+                }
+            }
+        }
 	return false;
-    } */
+    }
     
 
     int ConstantBlindRand8()
@@ -560,24 +564,9 @@ public:
         m_formatter.oneByteOp(OP_POP_EAX, reg);
     }
 
-    /* michath void push_i32(int imm) */
     void push_i32(int imm)
     {
-	if (isConstantBlind(imm))
-	    push_i32_blnd(imm);
-	else
-	    push_i32_norm(imm);
-    }
-
-    /* TODO this seg faults */
-    void push_i32_blnd(int imm)
-    {
-	push_i32_norm(imm);
-    }
-    
-    void push_i32_norm(int imm)
-    {
-        spew("pushi      $0x%x",imm);
+        spew("push      $0x%x",imm);
         m_formatter.oneByteOp(OP_PUSH_Iz);
         m_formatter.immediate32(imm);
     }
