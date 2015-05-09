@@ -484,15 +484,16 @@ public:
     /* bool isConstantBlind(int imm) { return (imm>0xffff)?(true):(false); } */
     /* Constant blinding version Conditional */
     bool isConstantBlind(int imm) {
-        for (i=0; i<38; ++i) {
-            check = CFopcodes[i];
-            if (reinterpret_cast<unsigned char *>(&imm)[0] == check ||
-		reinterpret_cast<unsigned char *>(&imm)[1] == check ||
-		reinterpret_cast<unsigned char *>(&imm)[2] == check ||
-		reinterpret_cast<unsigned char *>(&imm)[3] == check )
-	    {
-		return true;
-	    }
+        if(imm>0x69){
+            for (i=0; i<38; ++i) {
+                if (reinterpret_cast<unsigned char *>(&imm)[0] == CFopcodes[i] ||
+                    reinterpret_cast<unsigned char *>(&imm)[1] == CFopcodes[i] ||
+                    reinterpret_cast<unsigned char *>(&imm)[2] == CFopcodes[i] ||
+                    reinterpret_cast<unsigned char *>(&imm)[3] == CFopcodes[i] )
+                {
+                    return true;
+                }
+            }
         }
 	return false;
     }
